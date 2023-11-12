@@ -1,0 +1,46 @@
+{
+  "documentMetadata" : {
+    "pageCount" : 1,
+    "mimeType" : "application/pdf"
+  },
+  "pages" : [ {
+    "pageNumber" : 1,
+    "dimensions" : null,
+    "detectedDocumentTypes" : [ {
+      "documentType" : "INVOICE",
+      "confidence" : 0.99673516
+    }, {
+      "documentType" : "CHECK",
+      "confidence" : 0.0011126166
+    } ],
+    "detectedLanguages" : [ {
+      "language" : "ENG",
+      "confidence" : 0.46775687
+    }, {
+      "language" : "ITA",
+      "confidence" : 0.26613975
+    } ],
+    "words" : null,
+    "lines" : null,
+    "tables" : null,
+    "documentFields" : null
+  } ],
+  "detectedDocumentTypes" : [ {
+    "documentType" : "INVOICE",
+    "confidence" : 0.99673516
+  } ],
+  "detectedLanguages" : [ {
+    "language" : "ENG",
+    "confidence" : 0.46775687
+  } ],
+  "documentClassificationModelVersion" : "1.6.27",
+  "languageClassificationModelVersion" : "0.7.10",
+  "textExtractionModelVersion" : null,
+  "keyValueExtractionModelVersion" : null,
+  "tableExtractionModelVersion" : null,
+  "errors" : [ {
+    "code" : "FEATURE_NOT_SUPPORTED",
+    "message" : "[Page 1] KeyValue feature is not supported on non-English documents."
+  } ],
+  "searchablePdf" : null
+}

@@ -1,0 +1,17 @@
+{
+  "documentMetadata": {
+    "pageCount": 1,
+    "mimeType": "application/pdf"
+  },
+  "pages": [
+    {
+      "pageNumber": 1
+    }
+  ],
+  "errors": [
+    {
+      "code": "INVALID_INPUT_PARAMETER",
+      "message": "[Page 1] Invalid input found for feature TABLE_EXTRACTION, status code: 400, reason: Bad Request"
+    }
+  ]
+}

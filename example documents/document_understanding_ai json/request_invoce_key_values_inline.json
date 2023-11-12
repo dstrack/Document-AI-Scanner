@@ -1,0 +1,27 @@
+{
+  "processorConfig": {
+    "processorType": "GENERAL",
+    "features": [
+      {
+        "featureType": "KEY_VALUE_EXTRACTION"
+      },
+      {
+        "featureType": "DOCUMENT_CLASSIFICATION",
+        "maxResults": 5
+      }
+    ],
+    "documentType": "INVOICE",
+    "isZipOutputEnabled": false,
+    "language": "ENG"
+  },
+  "compartmentId": "ocid1.compartment.oc1..aaaaaaaackpx37s32zo44j4ymjdfplq4uk6fnvkfl6qnj6azezaefqoefdfa",
+  "inputLocation": {
+    "sourceType": "INLINE_DOCUMENT_CONTENT",
+    "data": "......"
+  },
+  "outputLocation": {
+    "namespaceName": "frsvel7ogr9o",
+    "bucketName": "APEX_OCI_AI_REST_SERVICE",
+    "prefix": "Doccument_Scan_AI"
+  }
+}

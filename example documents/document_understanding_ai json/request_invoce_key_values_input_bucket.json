@@ -1,0 +1,33 @@
+{
+  "processorConfig": {
+    "processorType": "GENERAL",
+    "features": [
+      {
+        "featureType": "KEY_VALUE_EXTRACTION"
+      },
+      {
+        "featureType": "DOCUMENT_CLASSIFICATION",
+        "maxResults": 5
+      }
+    ],
+    "documentType": "INVOICE",
+    "language": "ENG"
+  },
+  "inputLocation": {
+    "sourceType": "OBJECT_STORAGE_LOCATIONS",
+    "objectLocations": [
+      {
+        "source": "OBJECT_STORAGE",
+        "namespaceName": "frsvel7ogr9o",
+        "bucketName": "APEX_OCI_AI_REST_SERVICE",
+        "objectName": "Doccument_Scan_AI/2023_04rechnung_5611287364.pdf"
+      }
+    ]
+  },
+  "compartmentId": "ocid1.compartment.oc1..aaaaaaaackpx37s32zo44j4ymjdfplq4uk6fnvkfl6qnj6azezaefqoefdfa",
+  "outputLocation": {
+    "namespaceName": "frsvel7ogr9o",
+    "bucketName": "APEX_OCI_AI_REST_SERVICE",
+    "prefix": "Doccument_Scan_AI"
+  }
+}

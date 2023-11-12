@@ -1,0 +1,62 @@
+{
+  "id": "ocid1.aidocumentprocessorjob.oc1.eu-frankfurt-1.amaaaaaa74akfsaaq6uafsoiwptoryl3725yovc26b57kn37acfjgs6d4wpq",
+  "compartmentId": "ocid1.compartment.oc1..aaaaaaaackpx37s32zo44j4ymjdfplq4uk6fnvkfl6qnj6azezaefqoefdfa",
+  "displayName": null,
+  "processorConfig": {
+    "processorType": "GENERAL",
+    "documentType": "RECEIPT",
+    "features": [
+      {
+        "featureType": "DOCUMENT_CLASSIFICATION",
+        "maxResults": 5,
+        "modelId": null,
+        "tenancyId": null
+      },
+      {
+        "featureType": "LANGUAGE_CLASSIFICATION",
+        "maxResults": 5
+      },
+      {
+        "featureType": "KEY_VALUE_EXTRACTION",
+        "modelId": null,
+        "tenancyId": null
+      },
+      {
+        "featureType": "TABLE_EXTRACTION"
+      },
+      {
+        "featureType": "TEXT_EXTRACTION",
+        "generateSearchablePdf": true,
+        "selectionMarkDetection": null
+      }
+    ],
+    "isZipOutputEnabled": false,
+    "language": "ENG"
+  },
+  "inputLocation": {
+    "sourceType": "OBJECT_STORAGE_LOCATIONS",
+    "objectLocations": [
+      {
+        "namespaceName": "frsvel7ogr9o",
+        "bucketName": "APEX_OCI_AI_REST_SERVICE",
+        "objectName": "scan_ai_documents/job000124/Quittung_nachos.pdf"
+      },
+      {
+        "namespaceName": "frsvel7ogr9o",
+        "bucketName": "APEX_OCI_AI_REST_SERVICE",
+        "objectName": "scan_ai_documents/job000124/Quitting_KDW.pdf"
+      }
+    ]
+  },
+  "timeAccepted": "2023-06-06T19:20:51.167Z",
+  "timeStarted": "2023-06-06T19:20:52.087Z",
+  "timeFinished": "2023-06-06T19:21:43.446Z",
+  "percentComplete": 100,
+  "outputLocation": {
+    "namespaceName": "frsvel7ogr9o",
+    "bucketName": "APEX_OCI_AI_REST_SERVICE",
+    "prefix": "scan_ai_results"
+  },
+  "lifecycleState": "FAILED",
+  "lifecycleDetails": "PARTIALLY_SUCCEEDED"
+}
