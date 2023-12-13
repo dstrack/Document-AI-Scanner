@@ -181,7 +181,7 @@ VALUES ('INVOICE', 'TotalVAT',	'Total tax value identified on this invoice.', 'N
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_TYPES (Document_type, Field_label, Description, Value_Type, Field_Name_Eng, Field_Name_Deu, Page_Item_Name)
 VALUES ('INVOICE', 'InvoiceTotal',	'Total charge amount associated with the invoice.', 'NUMBER', 'Invoice total', 'Rechnungsumme Brutto', 'P4_GEAENDERTE_FORDERUNG');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_TYPES (Document_type, Field_label, Description, Value_Type, Field_Name_Eng, Field_Name_Deu, Page_Item_Name)
-VALUES ('INVOICE', 'AmountDue',	'Total amount due to the vendor.', 'NUMBER', 'amount due', 'Fälliger Betrag', 'P4_GEAENDERTE_FORDERUNG');
+VALUES ('INVOICE', 'AmountDue',	'Total amount due to the vendor.', 'NUMBER', 'Amount due', 'Fälliger Betrag', 'P4_GEAENDERTE_FORDERUNG');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_TYPES (Document_type, Field_label, Description, Value_Type, Field_Name_Eng, Field_Name_Deu, Page_Item_Name)
 VALUES ('INVOICE', 'ServiceAddress',	'Explicit service address or property address for the customer.', 'STRING', 'Service address', 'Serviceadresse', NULL);
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_TYPES (Document_type, Field_label, Description, Value_Type, Field_Name_Eng, Field_Name_Deu, Page_Item_Name)
@@ -216,6 +216,10 @@ INSERT INTO DOCUMENT_SCAN_AI_FIELD_TYPES (Document_type, Field_label, Descriptio
 VALUES ('INVOICE', 'BankIBAN',	'Vendor Bank IBAN.', 'IBAN', 'Bank IBAN', 'Bank IBAN', 'P4_IBAN');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_TYPES (Document_type, Field_label, Description, Value_Type, Field_Name_Eng, Field_Name_Deu, Page_Item_Name)
 VALUES ('INVOICE', 'Ignored',	'Ignored Aliases', 'STRING', '*Ignored', '*Ausgeblendet', NULL);
+--
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_TYPES (Document_type, Field_label, Description, Value_Type, Field_Name_Eng, Field_Name_Deu, Page_Item_Name)
+VALUES ('INVOICE', 'TaxRate',	'Tax rate in percent identified on this invoice.', 'NUMBER', 'Tax rate', 'Steuersatz', NULL);
+
 COMMIT;
 
 
