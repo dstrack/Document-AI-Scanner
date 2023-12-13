@@ -216,6 +216,23 @@ CREATE OR REPLACE PACKAGE Document_Scan_Ai_Pkg AS
 		p_searchable_pdf_url	IN DOCUMENT_SCAN_AI_DOCS.searchable_pdf_url%TYPE,
 		p_object_store_url 		IN DOCUMENT_SCAN_AI_DOCS.object_store_url%TYPE
 	);
+	TYPE rec_files_type IS RECORD (
+		FILENAME		VARCHAR2(400),
+		MIME_TYPE		VARCHAR2(255),
+		CUSTOM_ID		NUMBER,
+		BLOB_CONTENT	BLOB
+	);
+	TYPE files_ref_cursor IS REF CURSOR RETURN rec_files_type;
+	FUNCTION Process_Files_Cursor (
+		p_documentType			IN VARCHAR2 DEFAULT GC_PROCESSOR_DOCUMENT_TYPE, 
+		p_Language				IN VARCHAR2 DEFAULT GC_PROCESSOR_LANGUAGE_CODE,
+		p_Key_Values_Extraction IN VARCHAR2 DEFAULT GC_KEY_VALUES_EXTRACTION,
+		p_Table_Extraction		IN VARCHAR2 DEFAULT GC_TABLE_EXTRACTION,
+		p_generateSearchablePdf IN VARCHAR2 DEFAULT GC_GENERATE_SEARCHABLE_PDF,
+		p_exec_asynchronous 	IN VARCHAR2 DEFAULT GC_EXECUTE_ASYNCHRONOUS,
+		p_files_cv				IN files_ref_cursor,
+		p_Context 				IN NUMBER DEFAULT NULL
+	) RETURN Document_Scan_Ai_Jobs.Job_Id%TYPE;
 
 	FUNCTION Process_Files (
 		p_documentType			IN VARCHAR2 DEFAULT GC_PROCESSOR_DOCUMENT_TYPE, 
@@ -224,10 +241,89 @@ CREATE OR REPLACE PACKAGE Document_Scan_Ai_Pkg AS
 		p_Table_Extraction		IN VARCHAR2 DEFAULT GC_TABLE_EXTRACTION,
 		p_generateSearchablePdf IN VARCHAR2 DEFAULT GC_GENERATE_SEARCHABLE_PDF,
 		p_exec_asynchronous 	IN VARCHAR2 DEFAULT GC_EXECUTE_ASYNCHRONOUS,
-		p_file_blob 			IN BLOB DEFAULT NULL,
-		p_mime_type				IN VARCHAR2 DEFAULT 'application/pdf',
 		p_Context 				IN NUMBER DEFAULT NULL
 	) RETURN Document_Scan_Ai_Jobs.Job_Id%TYPE;
+
+	TYPE rec_text_fragments_type IS RECORD (
+		JOB_ID	NUMBER,
+		DOCUMENT_ID	NUMBER,
+		PAGE_NUMBER	NUMBER,
+		TEXT_LINE	VARCHAR2(2000 BYTE),
+		LINE_NO	NUMBER,
+		ELEMENT_NO	NUMBER,
+		LINE_HEIGHT	NUMBER,
+		X0	NUMBER,
+		Y0	NUMBER,
+		X1	NUMBER,
+		Y1	NUMBER,
+		X2	NUMBER,
+		Y2	NUMBER,
+		X3	NUMBER,
+		Y3	NUMBER,
+		CONFIG_ID	NUMBER,
+		CONTEXT_ID	NUMBER,
+		JOB_LANGUAGE_CODE	VARCHAR2(10 BYTE),
+		LANGUAGE_CODE	VARCHAR2(10 BYTE),
+		JOB_DOCUMENT_TYPE	VARCHAR2(50 BYTE),
+		DOCUMENT_TYPE_CODE	VARCHAR2(50 BYTE),
+		COMPOSITE_PATTERN	NUMBER
+	);
+	TYPE tab_text_fragments_type IS TABLE OF rec_text_fragments_type;
+
+	/* splt text line from the json document into fragments with key-value pairs when a separator like - ; | or . is found. */
+	FUNCTION Document_Text_Fragments (p_document_id IN NUMBER)
+	RETURN tab_text_fragments_type PIPELINED;
+
+	TYPE rec_text_key_values_type IS RECORD (
+		DOCUMENT_ID	NUMBER,
+		JOB_ID	NUMBER,
+		PAGE_NUMBER	NUMBER,
+		LINE_NO	NUMBER,
+		ELEMENT_NO	NUMBER,
+		ITEM_LABEL	VARCHAR2(300 BYTE),
+		ITEM_VALUE	VARCHAR2(2000 BYTE),
+		X0	NUMBER,
+		Y0	NUMBER,
+		FIELD_LABEL	VARCHAR2(50 BYTE),
+		LABEL_HEIGHT	NUMBER,
+		VALUE_HEIGHT	NUMBER,
+		HEIGHT_RATIO	NUMBER,
+		VALUE_TYPE	VARCHAR2(50 BYTE),
+		ITEM_VALUE_TYPE	VARCHAR2(50 BYTE),
+		NUMBER_VALUE	NUMBER,
+		DATE_VALUE	DATE,
+		LANGUAGE_RANK	NUMBER,
+		TERRITORY	VARCHAR2(20 BYTE),
+		CATEGORY	NUMBER,
+		VALID_CONVERSION	NUMBER,
+		RANK	NUMBER
+	);
+	TYPE tab_text_key_values_type IS TABLE OF rec_text_key_values_type;
+	/* find key-value pairs in text lines from the json document */
+	FUNCTION Document_Text_Key_Values (
+		p_Job_Id 		IN DOCUMENT_SCAN_AI_DOCS.Job_Id%TYPE DEFAULT NULL,
+		p_document_id 	IN DOCUMENT_SCAN_AI_DOCS.document_id%TYPE DEFAULT NULL
+	)
+	RETURN tab_text_key_values_type PIPELINED;
+
+	TYPE rec_new_key_values_type IS RECORD (
+		FIELD_TEXT	VARCHAR2(2000 BYTE),
+		FIELD_ALIAS	VARCHAR2(300 BYTE),
+		FIELD_TYPE	VARCHAR2(50 BYTE),
+		LANGUAGE_CODE	VARCHAR2(10 BYTE),
+		DOCUMENT_TYPE	VARCHAR2(50 BYTE),
+		MATCH_PATTERN	VARCHAR2(5 BYTE),
+		LABEL_TYPE	VARCHAR2(50 BYTE),
+		JOB_ID	NUMBER,
+		DOCUMENT_ID	NUMBER
+	);
+	TYPE tab_new_key_values_type IS TABLE OF rec_new_key_values_type;
+	/* find key-value pairs in text lines from the json document */
+	FUNCTION Document_New_Key_Values (
+		p_Job_Id 		IN DOCUMENT_SCAN_AI_DOCS.Job_Id%TYPE DEFAULT NULL,
+		p_document_id 	IN DOCUMENT_SCAN_AI_DOCS.document_id%TYPE DEFAULT NULL
+	)
+	RETURN tab_new_key_values_type PIPELINED;
 
 	PROCEDURE Load_Document_Field_Alias (
 		p_Job_Id 		IN DOCUMENT_SCAN_AI_DOCS.Job_Id%TYPE DEFAULT NULL,

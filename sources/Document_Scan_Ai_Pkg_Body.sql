@@ -814,38 +814,28 @@ $END
 
 	--------------------------------------------------------------------------------
 	FUNCTION upload_file (
-		p_apex_file_name		IN VARCHAR2,
-		p_job_id				IN Document_Scan_Ai_Jobs.Job_Id%TYPE
+		p_file_name		IN VARCHAR2,
+		p_blob_content  IN BLOB,
+		p_mime_type		IN VARCHAR2,
+		p_custom_id		IN NUMBER,
+		p_job_id		IN Document_Scan_Ai_Jobs.Job_Id%TYPE
 	) RETURN DOCUMENT_SCAN_AI_DOCS.document_id%TYPE
 	IS
-		CURSOR cr_file_info IS
-			SELECT filename
-			,	   blob_content
-			,	   mime_type
-			FROM   apex_application_temp_files
-			WHERE  name = p_apex_file_name;
-
-		lr_file_info	cr_file_info%ROWTYPE;
 		v_document_id	DOCUMENT_SCAN_AI_DOCS.document_id%TYPE;
 		v_object_store_url VARCHAR2(4000);
 	BEGIN
-
-		-- Get the File BLOB Content and File Name uploaded from APEX.
-		OPEN	cr_file_info;
-		FETCH cr_file_info INTO lr_file_info;
-		CLOSE cr_file_info;
 	
 		-- Post file to OCI Object Store.
 		v_object_store_url := put_file (
-			p_mime_type		=> lr_file_info.mime_type,
-			p_file_blob		=> lr_file_info.blob_content,
-			p_file_name		=> lr_file_info.filename,
+			p_mime_type		=> p_mime_type,
+			p_file_blob		=> p_blob_content,
+			p_file_name		=> p_file_name,
 			p_job_id		=> p_job_id
 		);
 
 		-- Create Document Record
-		INSERT INTO DOCUMENT_SCAN_AI_DOCS (file_name, mime_type, object_store_url, job_id)
-		VALUES (lr_file_info.filename, lr_file_info.mime_type, v_object_store_url, p_job_id) 
+		INSERT INTO DOCUMENT_SCAN_AI_DOCS (file_name, mime_type, object_store_url, custom_id, job_id)
+		VALUES (p_file_name, p_mime_type, v_object_store_url, p_custom_id, p_job_id) 
 		RETURNING document_id INTO v_document_id;
 
 		apex_debug.message('upload_file - document_id: %s', v_document_id);
@@ -858,17 +848,11 @@ $END
 		p_Key_Values_Extraction IN VARCHAR2 DEFAULT 'N',
 		p_Table_Extraction		IN VARCHAR2 DEFAULT 'N',
 		p_generateSearchablePdf IN VARCHAR2 DEFAULT 'N',
-		p_file_blob 			IN BLOB DEFAULT NULL,
-		p_mime_type				IN VARCHAR2 DEFAULT 'application/pdf',
+		p_files_cv				IN files_ref_cursor,
 		p_Context 				IN NUMBER DEFAULT NULL
 	) RETURN Document_Scan_Ai_Jobs.Job_Id%TYPE
 	IS 
-
-		CURSOR cr_files IS
-			SELECT NAME, FILENAME
-			FROM APEX_APPLICATION_TEMP_FILES;
-		
-		v_files					cr_files%ROWTYPE;
+		v_files					rec_files_type;
 		v_Job_ID				DOCUMENT_SCAN_AI_JOBS.Job_Id%TYPE;
 		v_document_id			DOCUMENT_SCAN_AI_DOCS.document_id%TYPE;
 		v_object_store_url 		VARCHAR2(4000);
@@ -883,45 +867,31 @@ $END
 		) VALUES (
 			p_Language, p_documentType, p_generateSearchablePdf, p_Key_Values_Extraction, p_Table_Extraction, p_Context, GC_CONFIG_ID
 		) RETURNING Job_Id INTO v_Job_ID;
-		if p_file_blob IS NOT NULL then 
-			v_File_Name := apex_string.format('temporary_job%s.pdf', v_Job_ID);
-			v_Mime_Type := NVL(p_mime_type, 'application/pdf');
-			-- Post file to OCI Object Store.
-			v_object_store_url := put_file (
-				p_mime_type			=> v_Mime_Type,
-				p_file_blob			=> p_file_blob,
-				p_file_name			=> v_File_Name
-			);
-			-- Create Document Record
-			INSERT INTO DOCUMENT_SCAN_AI_DOCS (file_name, mime_type, object_store_url, job_id)
-			VALUES (v_File_Name,  v_Mime_Type, v_object_store_url, v_job_id) 
-			RETURNING document_id INTO v_document_id;
 
-			v_doc_locations_json := get_OCI_INPUT_DOC_LOCATION(v_File_Name, v_job_id);
-		else 
-			OPEN	cr_files;
-			LOOP 
-				FETCH cr_files INTO v_files;
-				EXIT WHEN cr_files%NOTFOUND;
-				v_Count := v_Count + 1;
-				-- Get file and upload to OCI Object Storage.
-				v_document_id := upload_file (
-					p_apex_file_name   	=> v_files.NAME,
-					p_job_id			=> v_Job_ID
-				);
-				v_doc_locations_json := v_doc_locations_json 
-									|| case when v_Count > 1 then ',' end
-									|| get_OCI_INPUT_DOC_LOCATION(v_files.filename, v_job_id);
-			END LOOP;
-			CLOSE cr_files;
-		end if;
+		LOOP 
+			FETCH p_files_cv INTO v_files;
+			EXIT WHEN p_files_cv%NOTFOUND;
+			v_Count := v_Count + 1;
+			-- Get file and upload to OCI Object Storage.
+			v_document_id := upload_file (
+				p_file_name   	=> v_files.FILENAME,
+				p_blob_content	=> v_files.BLOB_CONTENT,
+				p_mime_type		=> v_files.MIME_TYPE,
+				p_custom_id		=> v_files.CUSTOM_ID,
+				p_job_id		=> v_Job_ID
+			);
+			v_doc_locations_json := v_doc_locations_json 
+								|| case when v_Count > 1 then ',' end
+								|| get_OCI_INPUT_DOC_LOCATION(v_files.filename, v_job_id);
+		END LOOP;
+
 		l_request_json := get_OCI_DOC_AI_PAYLOAD(
 			p_documentType 			=> p_documentType, 
 			p_Language 				=> GC_PROCESSOR_LANGUAGE_CODE, 
 			p_Key_Values_Extraction => p_Key_Values_Extraction,
 			p_Table_Extraction		=> p_Table_Extraction,
 			p_generateSearchablePdf => p_generateSearchablePdf,
-			p_objectLocations => v_doc_locations_json
+			p_objectLocations 		=> v_doc_locations_json
 		);
 		UPDATE Document_Scan_Ai_Jobs 
 		SET Processorjob_Details = l_request_json
@@ -1033,6 +1003,427 @@ $END
 		RETURN vr_processorJob_data;
 	END Get_Job_State;
 	--------------------------------------------------------------------------------
+	/* splt text line from the json document into fragments with key-value pairs when a separator like - ; | or . is found. */
+	FUNCTION Document_Text_Fragments (p_document_id IN NUMBER)
+	RETURN tab_text_fragments_type PIPELINED
+	IS 
+		CURSOR text_cur
+		IS 	
+		with FULL_LINES as (
+			SELECT s.document_id, s.job_id, jt.page_number, 
+				jt.text_line, jt.line_no, 
+				jt.y3 - jt.y0 line_height,
+				jt.x0, jt.y0, jt.x1, jt.y1, jt.x2, jt.y2, jt.x3, jt.y3, 
+				J.config_id, J.context_id, J.language_code job_language_code, s.language_code,
+				J.documentType job_document_type, S.document_type_code,
+				case when REGEXP_LIKE(jt.text_line, '( - |;| \| | \. )+\D+\W+\w+') then 1
+					when REGEXP_LIKE(jt.text_line, '( - |;| \| |\. |, )+(\D+:|[A-Z]+ )') then 2
+					when REGEXP_LIKE(jt.text_line, '^[A-Z][A-Za-z]* \w+, [A-Z][A-Za-z]* \w+') then 3
+					when REGEXP_LIKE(text_line, '^[A-Z][A-Za-z]*: [^ ]*( [A-Z][A-Za-z]*: [^ ]*)*$') then 4
+					else 0
+				end composite_pattern
+			FROM DOCUMENT_SCAN_AI_JOBS j, DOCUMENT_SCAN_AI_DOCS s, 
+				JSON_TABLE(s.doc_ai_json, '$.pages[*]' COLUMNS 
+					(page_number             NUMBER PATH '$.pageNumber',
+					NESTED PATH '$.lines[*]' COLUMNS
+						(line_no             FOR ORDINALITY,
+						text_line            VARCHAR2(1000) TRUNCATE PATH '$.text',
+						x0					 NUMBER PATH '$.boundingPolygon.normalizedVertices[0].x', -- upper left
+						y0					 NUMBER PATH '$.boundingPolygon.normalizedVertices[0].y',
+						x1					 NUMBER PATH '$.boundingPolygon.normalizedVertices[1].x', -- upper right
+						y1					 NUMBER PATH '$.boundingPolygon.normalizedVertices[1].y',
+						x2					 NUMBER PATH '$.boundingPolygon.normalizedVertices[2].x', -- lower right
+						y2					 NUMBER PATH '$.boundingPolygon.normalizedVertices[2].y',
+						x3					 NUMBER PATH '$.boundingPolygon.normalizedVertices[3].x', -- lower left
+						y3					 NUMBER PATH '$.boundingPolygon.normalizedVertices[3].y'
+				))) jt
+			WHERE s.job_id = j.job_id
+			AND s.document_id = p_document_id
+		)
+		select s.job_id, s.document_id, s.page_number, 
+			trim(sp.text_line) text_line, 
+			s.line_no, sp.element_no, 
+			s.line_height, s.x0, s.y0, s.x1, s.y1, s.x2, s.y2, s.x3, s.y3,
+			s.config_id, s.context_id, s.job_language_code, s.language_code,
+			s.job_document_type, s.document_type_code, s.composite_pattern
+		from FULL_LINES s
+		cross apply (SELECT /*+ CARDINALITY (C 3) */ COLUMN_VALUE text_line, ROWNUM element_no 
+			FROM apex_string.split(s.text_line, '( - |;| \| | \. )') C
+		) sp
+		where composite_pattern = 1
+		union all 
+		select s.job_id, s.document_id, s.page_number, 
+			trim(sp.text_line) text_line, 
+			s.line_no, sp.element_no, 
+			s.line_height, s.x0, s.y0, s.x1, s.y1, s.x2, s.y2, s.x3, s.y3,
+			s.config_id, s.context_id, s.job_language_code, s.language_code,
+			s.job_document_type, s.document_type_code, s.composite_pattern
+		from FULL_LINES s
+		cross apply (SELECT /*+ CARDINALITY (C 3) */ COLUMN_VALUE text_line, ROWNUM element_no 
+			FROM apex_string.split(s.text_line, '( - |;| \| |\. |, )') C
+		) sp
+		where composite_pattern = 2
+		union all 
+		select s.job_id, s.document_id, s.page_number, 
+			trim(sp.text_line) text_line, 
+			s.line_no, sp.element_no, 
+			s.line_height, s.x0, s.y0, s.x1, s.y1, s.x2, s.y2, s.x3, s.y3,
+			s.config_id, s.context_id, s.job_language_code, s.language_code,
+			s.job_document_type, s.document_type_code, s.composite_pattern
+		from FULL_LINES s
+		cross apply (SELECT /*+ CARDINALITY (C 3) */ COLUMN_VALUE text_line, ROWNUM element_no 
+			FROM apex_string.split(s.text_line, ', ') C
+		) sp
+		where composite_pattern = 3
+		union all 
+		select s.job_id, s.document_id, s.page_number, 
+			REGEXP_SUBSTR(s.text_line, '[A-Z][A-Za-z]*: [^ ]*', 1, LEVEL) AS text_line, 
+			s.line_no, LEVEL element_no, 
+			s.line_height, s.x0, s.y0, s.x1, s.y1, s.x2, s.y2, s.x3, s.y3,
+			s.config_id, s.context_id, s.job_language_code, s.language_code,
+			s.job_document_type, s.document_type_code, s.composite_pattern
+		from (
+			select * from FULL_LINES 
+			where composite_pattern = 4
+		) s
+		connect by REGEXP_SUBSTR(s.text_line, '[A-Z][A-Za-z]*: [^ ]*', 1, LEVEL) IS NOT NULL
+		union all 
+		select s.job_id, s.document_id, s.page_number, 
+			trim(s.text_line) text_line, 
+			s.line_no, 1 element_no, 
+			s.line_height, s.x0, s.y0, s.x1, s.y1, s.x2, s.y2, s.x3, s.y3,
+			s.config_id, s.context_id, s.job_language_code, s.language_code,
+			s.job_document_type, s.document_type_code, s.composite_pattern
+		from FULL_LINES s
+		where composite_pattern = 0;
+		v_in_rows tab_text_fragments_type;
+	BEGIN 
+		OPEN text_cur;
+		LOOP
+			FETCH text_cur BULK COLLECT INTO v_in_rows LIMIT 200;
+			EXIT WHEN v_in_rows.COUNT = 0;
+			FOR ind IN 1 .. v_in_rows.COUNT LOOP
+				pipe row (v_in_rows(ind));
+			END LOOP;
+		END LOOP;
+		CLOSE text_cur;  
+	END Document_Text_Fragments;
+
+	FUNCTION Document_Text_Key_Values (
+		p_Job_Id 		IN DOCUMENT_SCAN_AI_DOCS.Job_Id%TYPE DEFAULT NULL,
+		p_document_id 	IN DOCUMENT_SCAN_AI_DOCS.document_id%TYPE DEFAULT NULL
+	)
+	RETURN tab_text_key_values_type PIPELINED
+	IS 
+		CURSOR text_cur
+		IS 	
+		with TEXT_FRAGMENTS as (
+		select 
+				d.JOB_ID,
+				d.DOCUMENT_ID,
+				t.PAGE_NUMBER,
+				t.TEXT_LINE,
+				t.LINE_NO,
+				t.ELEMENT_NO,
+				t.LINE_HEIGHT,
+				t.X0,
+				t.Y0,
+				t.X1,
+				t.Y1,
+				t.X2,
+				t.Y2,
+				t.X3,
+				t.Y3,
+				t.CONFIG_ID,
+				t.CONTEXT_ID,
+				t.JOB_LANGUAGE_CODE,
+				t.LANGUAGE_CODE,
+				t.JOB_DOCUMENT_TYPE,
+				t.DOCUMENT_TYPE_CODE,
+				t.COMPOSITE_PATTERN
+			from DOCUMENT_SCAN_AI_DOCS d, table(Document_Scan_Ai_Pkg.Document_Text_Fragments(d.DOCUMENT_ID)) t
+			where (d.job_id = p_Job_Id or p_Job_Id IS NULL)
+			and (d.document_id = p_document_id OR p_document_id IS NULL)
+		)
+		, LABEL_LINES as (
+			select s.document_id, s.job_id, s.page_number, 
+				s.text_line, 
+				s.line_no, s.element_no,
+				s.line_height, s.x0, s.y0, s.x1, s.y1, 
+				s.config_id, s.context_id, s.job_language_code, s.language_code,
+				s.job_document_type, s.document_type_code,
+				s.composite_pattern,
+				INSTR(s.text_line, ':', length(fa.field_alias)+1) colon_offset,
+				ltrim(substr(s.text_line, length(fa.field_alias)+1), ': ') data_part,
+				fa.field_alias, fa.Field_label, ft.Value_Type
+			from TEXT_FRAGMENTS s
+			join DOCUMENT_SCAN_AI_FIELD_ALIAS fa 
+				on UPPER(s.text_line) LIKE UPPER(fa.field_alias||'%')
+				and s.config_id = fa.config_id 
+				and fa.language_code IN (s.language_code, s.job_language_code)
+				and fa.Document_type in (s.job_document_type, s.document_type_code)
+				and (UPPER(s.text_line) = UPPER(fa.field_alias) or substr(s.text_line, length(fa.field_alias)+1, 1) in (' ', ':'))
+			join DOCUMENT_SCAN_AI_FIELD_TYPES ft 
+				on ft.Document_type = fa.Document_type
+				and ft.config_id = fa.config_id
+				and ft.Field_label = fa.Field_label
+		) 
+		, TEXT_KEY_VALUES as (
+			select lb.document_id, lb.job_id, lb.page_number, lb.line_no, lb.element_no
+				, lb.item_label, lb.item_value, lb.x0, lb.y0
+				, lb.Field_label
+				, round(lb.label_height, 4) label_height
+				, round(lb.value_height, 4) value_height
+				, round(value_height / label_height, 4) height_ratio
+				, lb.Value_Type
+				, case 
+					when lb.Value_Type = 'DATE' and Document_Scan_Ai_Pkg.Validate_Date_Conversion(lb.item_value, L.common_date_format, L.nls_date_language) = 1 
+					then 'DATE'
+					when lb.Value_Type = 'NUMBER' and Document_Scan_Ai_Pkg.Validate_Number_Conversion(lb.item_value, L.nls_numeric_characters, L.nls_currency, L.nls_iso_currency, L.territory) = 1 
+					then 'NUMBER' 
+					else Document_Scan_Ai_Pkg.Get_String_Type (lb.Value_Type, lb.item_value)
+				end Item_Value_Type
+				, case when Document_Scan_Ai_Pkg.Validate_Date_Conversion(lb.item_value, L.common_date_format, L.nls_date_language) = 0
+					and Document_Scan_Ai_Pkg.Validate_Number_Conversion(lb.item_value, L.nls_numeric_characters, L.nls_currency, L.nls_iso_currency, L.territory) = 1 
+					then Document_Scan_Ai_Pkg.FM9_TO_Number(lb.item_value, L.nls_numeric_characters, L.nls_currency, L.nls_iso_currency, L.territory, p_Default_On_Error=>0)
+				end Number_value
+				, case when Document_Scan_Ai_Pkg.Validate_Date_Conversion(lb.item_value, L.common_date_format, L.nls_date_language) = 1 
+					then Document_Scan_Ai_Pkg.To_Date_Conversion(lb.item_value, L.common_date_format, L.nls_date_language)
+				end Date_Value 
+				, case when l.iso_code = lb.language_code then 1 else 2 end language_rank
+				, l.territory
+				, lb.category
+			from (
+				-- find composite lines with label : value  
+				select lb.document_id, lb.job_id, lb.page_number, lb.line_no
+					, lb.field_alias item_label, lb.Field_label, lb.Value_Type
+					, lb.data_part item_value
+					, lb.x0, lb.y0, lb.element_no, lb.job_document_type, lb.document_type_code
+					, lb.config_id, lb.context_id, lb.language_code, lb.job_language_code, 1 category
+					, lb.line_height label_height, lb.line_height value_height
+				from LABEL_LINES lb
+				where (colon_offset != 0 or Document_Scan_Ai_Pkg.Get_String_Type (lb.Value_Type, lb.text_line) != 'INITCAP')
+				and lb.data_part IS NOT NULL
+				union all
+				-- find labels (optional ending with :) followed by a value on the next line below
+				select lb.document_id, lb.job_id, lb.page_number, lv.line_no
+					, lb.field_alias item_label, lb.Field_label, lb.Value_Type
+					, lv.text_line item_value
+					, lv.x0, lv.y0, 1 element_no, lb.job_document_type, lb.document_type_code
+					, lb.config_id, lb.context_id, lb.language_code, lb.job_language_code, 3 category
+					, lb.line_height label_height, lv.line_height value_height
+				from LABEL_LINES lb, TEXT_FRAGMENTS lv
+				where lb.document_id = lv.document_id
+				and lb.page_number = lv.page_number
+				and UPPER(lb.text_line) in (UPPER(lb.field_alias), UPPER(lb.field_alias)||':')
+				and INSTR(lv.text_line, ':') !=  LENGTH(lv.text_line) -- does not end with colon :
+				and lb.y0 < lv.y0              	-- label above value 
+				and (lv.y0 - lb.y0) < lb.line_height * 2.5		-- near by; in the next lines below
+				and (abs(lb.x0 - lv.x0) < lb.line_height * 2.5 or abs(lb.x1 - lv.x1) < lb.line_height * 2.5) -- same column, left or right aligned 
+				and lv.composite_pattern = 0
+				and lb.composite_pattern = 0
+				union all
+				-- find labels with known alias followed by a value in the same line.
+				select  
+					lb.document_id, lb.job_id, lb.page_number, lv.line_no
+					, lb.field_alias item_label, lb.Field_label, lb.Value_Type
+					, lv.text_line item_value
+					, lv.x0, lv.y0, 1 element_no, lb.job_document_type, lb.document_type_code
+					, lb.config_id, lb.context_id, lb.language_code, lb.job_language_code, 4 category
+					, lb.line_height label_height, lv.line_height value_height
+				from LABEL_LINES lb, TEXT_FRAGMENTS lv
+				where lb.document_id = lv.document_id
+				and lb.page_number = lv.page_number
+				--and UPPER(lb.text_line) in (UPPER(lb.field_alias), UPPER(lb.field_alias)||':')
+				and UPPER(RTRIM(lb.text_line, ': ')) = UPPER(lb.field_alias)
+				and INSTR(lv.text_line, ':') !=  LENGTH(lv.text_line) -- does not end with colon :
+				and lb.x0 < lv.x0              -- label before value 
+				and abs(lb.y0 - lv.y0) < lb.line_height * 0.8 -- same line 
+				and lv.composite_pattern = 0
+				and lb.composite_pattern = 0
+			) lb 
+			outer apply (
+				select Context_Id, Client_Name, Client_Email, Client_Tax_Id, Client_Phone, Client_Iban, Client_Swift_Bic
+				from table(Document_Scan_Ai_Pkg.pipe_context_fields(lb.context_id))
+			) cx 
+			join DOCUMENT_SCAN_AI_LANGUAGES l 
+				on l.iso_code IN (lb.language_code, lb.job_language_code)
+				and lb.config_id = l.config_id
+			where not exists (
+				select 1
+				from DOCUMENT_SCAN_AI_FIELD_ALIAS fx
+				where UPPER(RTRIM(lb.item_value, ': ')) = UPPER(fx.field_alias)
+				-- UPPER(lb.item_value) in (UPPER(fx.field_alias), UPPER(fx.field_alias||':'))
+				and lb.config_id = fx.config_id 
+				and fx.language_code IN (lb.language_code, lb.job_language_code)
+				and fx.Document_type in (lb.job_document_type, lb.document_type_code)
+			)
+			and not (lb.Field_label = 'VendorName' and NVL(UPPER(cx.Client_Name), '+') = UPPER(lb.item_value))
+			and not (lb.Field_label = 'VendorEmail' and NVL(UPPER(cx.Client_Email), '+') = UPPER(lb.item_value))
+			and not (lb.Field_label = 'VendorPhone' and NVL(REPLACE(cx.Client_Phone, ' '), '+') = REPLACE(lb.item_value, ' '))
+			and not (lb.Field_label = 'VendorTaxId' and NVL(REPLACE(cx.Client_Tax_Id, ' '), '+') = REPLACE(lb.item_value, ' '))
+			and not (lb.Field_label = 'BankIBAN' and NVL(REPLACE(cx.Client_IBAN, ' '), '+') = REPLACE(lb.item_value, ' '))
+		)
+		select distinct kv.* 
+			, case when (Value_Type = Item_Value_Type or Value_Type = 'STRING')
+				then 1 else 0 
+			end as Valid_Conversion
+			, DENSE_RANK() OVER (PARTITION BY Document_Id, Field_label
+				ORDER BY case when (Value_Type = Item_Value_Type or Value_Type = 'STRING') 
+						then 0 else 1 end
+					, case when page_number <= 4 then 0 else 1 end
+					, LENGTH(ITEM_LABEL) DESC, ITEM_LABEL
+					, ABS(NUMBER_VALUE) desc nulls last, DATE_VALUE desc nulls last
+					, category
+					, case 
+						when category = 3 then y0  -- first element below label
+						when  category = 4 and Value_Type = 'NUMBER' then 1-x0 -- last element in the line
+						else x0 end -- next element in the line
+					, height_ratio desc
+					, page_number -- first occourence
+					, line_no
+					, element_no
+					, language_rank, territory
+			) RANK
+		from TEXT_KEY_VALUES kv;
+
+		v_in_rows tab_text_key_values_type;
+	BEGIN 
+		OPEN text_cur;
+		LOOP
+			FETCH text_cur BULK COLLECT INTO v_in_rows LIMIT 200;
+			EXIT WHEN v_in_rows.COUNT = 0;
+			FOR ind IN 1 .. v_in_rows.COUNT LOOP
+				pipe row (v_in_rows(ind));
+			END LOOP;
+		END LOOP;
+		CLOSE text_cur;  
+	END Document_Text_Key_Values;
+
+	FUNCTION Document_New_Key_Values (
+		p_Job_Id 		IN DOCUMENT_SCAN_AI_DOCS.Job_Id%TYPE DEFAULT NULL,
+		p_document_id 	IN DOCUMENT_SCAN_AI_DOCS.document_id%TYPE DEFAULT NULL
+	)
+	RETURN tab_new_key_values_type PIPELINED
+	IS 
+		CURSOR text_cur
+		IS 	
+		with TEXT_FRAGMENTS as (
+			select 
+				d.JOB_ID,
+				d.DOCUMENT_ID,
+				t.PAGE_NUMBER,
+				t.TEXT_LINE,
+				t.LINE_NO,
+				t.ELEMENT_NO,
+				t.LINE_HEIGHT,
+				t.X0,
+				t.Y0,
+				t.X1,
+				t.Y1,
+				t.X2,
+				t.Y2,
+				t.X3,
+				t.Y3,
+				t.CONFIG_ID,
+				t.CONTEXT_ID,
+				t.JOB_LANGUAGE_CODE,
+				t.LANGUAGE_CODE,
+				t.JOB_DOCUMENT_TYPE,
+				t.DOCUMENT_TYPE_CODE,
+				t.COMPOSITE_PATTERN
+			from DOCUMENT_SCAN_AI_DOCS d, table(Document_Scan_Ai_Pkg.Document_Text_Fragments(d.DOCUMENT_ID)) t
+			where (d.job_id = p_Job_Id or p_Job_Id IS NULL)
+			and (d.document_id = p_document_id OR p_document_id IS NULL)
+		)
+		select distinct field_text
+			, FIRST_VALUE(field_alias) OVER (PARTITION BY field_text ORDER BY LENGTH(field_alias) DESC, field_alias DESC) field_alias
+			, field_type
+			, language_code
+			, document_type
+			, match_pattern
+			, Document_Scan_Ai_Pkg.Get_String_Type ('STRING', field_text) label_type
+			, job_id 
+			, FIRST_VALUE(document_id) OVER (PARTITION BY field_text ORDER BY document_id) document_id
+		from (
+			select trim(substr(s.text_line,1,instr(s.text_line,':')-1)) field_text
+				, fa.field_alias
+				, fa.field_label field_type
+				, NVL(NULLIF(s.language_code, 'OTHERS'), s.job_language_code) language_code
+				, NVL(NULLIF(s.job_document_type, 'OTHERS'), s.document_type_code) document_type
+				, document_id, job_id, 'colon' match_pattern
+			from TEXT_FRAGMENTS s
+			left outer join DOCUMENT_SCAN_AI_FIELD_ALIAS fa 
+				on UPPER(s.text_line) LIKE UPPER(fa.field_alias||'%')
+				and s.config_id = fa.config_id 
+				and fa.language_code IN (s.language_code, s.job_language_code)
+				and fa.Document_type in (s.job_document_type, s.document_type_code)
+				and (UPPER(s.text_line) = UPPER(fa.field_alias) or substr(s.text_line, length(fa.field_alias)+1, 1) in (' ', ':'))
+			where instr(s.text_line,':') > 1 	-- line contains a colon
+			and length(s.text_line ) between 2 and 40
+			and REGEXP_LIKE(s.text_line, '^\D+') -- line begins with a word
+			union 
+			select  
+				lb.text_line field_text
+				, fa.field_alias
+				, fa.field_label field_type
+				, COALESCE(NULLIF(lb.language_code, 'OTHERS'), lb.job_language_code) language_code
+				, COALESCE(NULLIF(lb.job_document_type, 'OTHERS'), lb.document_type_code) Document_type
+				, document_id, job_id, 'pos' match_pattern
+			from TEXT_FRAGMENTS lb
+			left outer join DOCUMENT_SCAN_AI_FIELD_ALIAS fa 
+				on lb.text_line = fa.field_alias
+				and lb.config_id = fa.config_id 
+				and fa.language_code IN (lb.language_code, lb.job_language_code)
+				and fa.Document_type in (lb.job_document_type, lb.document_type_code)
+			where Document_Scan_Ai_Pkg.Get_String_Type ('STRING', lb.text_line) in ('INITCAP', 'UPPER', 'STRING')
+			and lb.composite_pattern = 0
+			and instr(lb.text_line,':') = 0 	-- line contains no colon
+			and length(lb.text_line ) between 2 and 40
+			and exists( 
+				select 1 
+				from TEXT_FRAGMENTS lv
+				JOIN DOCUMENT_SCAN_AI_LANGUAGES l 
+					ON l.iso_code IN (lv.language_code, lv.job_language_code)
+					AND l.config_id = lv.config_id
+				where lb.document_id = lv.document_id
+				and lb.page_number = lv.page_number
+				and lb.job_id = lv.job_id
+				and lv.composite_pattern = 0
+				and (Document_Scan_Ai_Pkg.Validate_Date_Conversion(lv.text_line, L.common_date_format, L.nls_date_language) = 1 
+				 or Document_Scan_Ai_Pkg.Validate_Number_Conversion(lv.text_line, L.nls_numeric_characters, L.nls_currency, L.nls_iso_currency, L.territory) = 1
+				)
+				--and Document_Scan_Ai_Pkg.Get_String_Type ('STRING', lv.text_line) IN ('ALPHANUM', 'NUMERIC')
+				and ((
+					-- find labels (optional ending with :) followed by a value on the next line below
+					lb.y0 < lv.y0              	-- label above value 
+					and (lv.y0 - lb.y0) < lb.line_height * 2.5		-- near by; in the next lines below
+					and (abs(lb.x0 - lv.x0) < lb.line_height * 2.5 or abs(lb.x1 - lv.x1) < lb.line_height * 2.5) -- same column, left or right aligned 
+				  ) or ( 
+					-- find labels with known alias followed by a value in the same line.
+					lb.x0 < lv.x0              -- label before value 
+					and abs(lb.y0 - lv.y0) < lb.line_height * 0.8 -- same line 
+					and lb.line_height <= lv.line_height
+				  )
+				)
+			)
+		)
+		order by 1;
+		
+		v_in_rows tab_new_key_values_type;
+	BEGIN 
+		OPEN text_cur;
+		LOOP
+			FETCH text_cur BULK COLLECT INTO v_in_rows LIMIT 200;
+			EXIT WHEN v_in_rows.COUNT = 0;
+			FOR ind IN 1 .. v_in_rows.COUNT LOOP
+				pipe row (v_in_rows(ind));
+			END LOOP;
+		END LOOP;
+		CLOSE text_cur;  
+	END Document_New_Key_Values;
+
+
 	PROCEDURE Load_Document_Field_Alias (
 		p_Job_Id 		IN DOCUMENT_SCAN_AI_DOCS.Job_Id%TYPE DEFAULT NULL,
 		p_document_id 	IN DOCUMENT_SCAN_AI_DOCS.document_id%TYPE DEFAULT NULL
@@ -1055,11 +1446,8 @@ $END
 					cast(item_value as varchar2(1000)) as field_text,
 					item_label as field_alias,
 					valid_conversion user_confirmed
-			FROM V_DOCUMENT_SCAN_AI_TEXT_KEY_VALUES S
+			FROM TABLE(Document_Scan_Ai_Pkg.Document_Text_Key_Values(p_Job_Id => p_Job_Id, p_document_id => p_document_id))
 			WHERE rank = 1
-			-- AND valid_conversion = 1
-			AND (job_id = p_Job_Id or p_Job_Id IS NULL)
-			AND (document_id = p_document_id OR p_document_id IS NULL)
         ) S
         ON (D.DOCUMENT_ID = S.DOCUMENT_ID AND D.PAGE_NUMBER = S.PAGE_NUMBER AND D.FIELD_TYPE_CODE = S.FIELD_TYPE_CODE 
         	AND D.FIELD_LABEL = S.FIELD_LABEL AND D.FIELD_TEXT = S.FIELD_TEXT)
@@ -1444,15 +1832,14 @@ $END
 	--------------------------------------------------------------------------------
 	
 	-- Main API function to process uploaded files from APEX_APPLICATION_TEMP_FILES or p_file_blob --
-	FUNCTION Process_Files (
+	FUNCTION Process_Files_Cursor (
 		p_documentType			IN VARCHAR2 DEFAULT GC_PROCESSOR_DOCUMENT_TYPE, 
 		p_Language				IN VARCHAR2 DEFAULT GC_PROCESSOR_LANGUAGE_CODE,
 		p_Key_Values_Extraction IN VARCHAR2 DEFAULT GC_KEY_VALUES_EXTRACTION,
 		p_Table_Extraction		IN VARCHAR2 DEFAULT GC_TABLE_EXTRACTION,
 		p_generateSearchablePdf IN VARCHAR2 DEFAULT GC_GENERATE_SEARCHABLE_PDF,
 		p_exec_asynchronous 	IN VARCHAR2 DEFAULT GC_EXECUTE_ASYNCHRONOUS,
-		p_file_blob 			IN BLOB DEFAULT NULL,
-		p_mime_type				IN VARCHAR2 DEFAULT 'application/pdf',
+		p_files_cv				IN files_ref_cursor,
 		p_Context 				IN NUMBER DEFAULT NULL
 	) RETURN Document_Scan_Ai_Jobs.Job_Id%TYPE
 	IS 
@@ -1465,8 +1852,7 @@ $END
 			p_Key_Values_Extraction => p_Key_Values_Extraction,
 			p_Table_Extraction		=> p_Table_Extraction,
 			p_generateSearchablePdf => p_generateSearchablePdf,
-			p_file_blob				=> p_file_blob,
-			p_mime_type				=> p_mime_type,
+			p_files_cv				=> p_files_cv,
 			p_Context				=> p_Context
 		);
 		if p_exec_asynchronous = 'Y' then 
@@ -1494,8 +1880,40 @@ $END
 		end if;
 
 		RETURN v_Job_ID;
-	END Process_Files;
+	END Process_Files_Cursor;
 
+	FUNCTION Process_Files (
+		p_documentType			IN VARCHAR2 DEFAULT GC_PROCESSOR_DOCUMENT_TYPE, 
+		p_Language				IN VARCHAR2 DEFAULT GC_PROCESSOR_LANGUAGE_CODE,
+		p_Key_Values_Extraction IN VARCHAR2 DEFAULT GC_KEY_VALUES_EXTRACTION,
+		p_Table_Extraction		IN VARCHAR2 DEFAULT GC_TABLE_EXTRACTION,
+		p_generateSearchablePdf IN VARCHAR2 DEFAULT GC_GENERATE_SEARCHABLE_PDF,
+		p_exec_asynchronous 	IN VARCHAR2 DEFAULT GC_EXECUTE_ASYNCHRONOUS,
+		p_Context 				IN NUMBER DEFAULT NULL
+	) RETURN Document_Scan_Ai_Jobs.Job_Id%TYPE
+	IS 
+		l_Job_ID		DOCUMENT_SCAN_AI_JOBS.Job_Id%TYPE;
+		cr_files 	files_ref_cursor;
+	BEGIN  
+		OPEN cr_files FOR
+			SELECT FILENAME, MIME_TYPE, 0 CUSTOM_ID, BLOB_CONTENT
+			FROM APEX_APPLICATION_TEMP_FILES;
+		
+		l_Job_ID := Process_Files_Cursor (
+			p_documentType			=> p_documentType, 
+			p_Language				=> p_Language, 
+			p_Key_Values_Extraction => p_Key_Values_Extraction,
+			p_Table_Extraction		=> p_Table_Extraction,
+			p_generateSearchablePdf => p_generateSearchablePdf,
+			p_exec_asynchronous 	=> p_exec_asynchronous,
+			p_files_cv				=> cr_files,
+			p_Context				=> p_Context
+		);
+		CLOSE cr_files;
+	
+		RETURN l_Job_ID;
+	END Process_Files;
+	
 	--------------------------------------------------------------------------------
 	FUNCTION get_file (p_request_url IN VARCHAR2) RETURN BLOB IS
 		l_file_blob				BLOB;
@@ -1616,7 +2034,6 @@ $END
 		p_mime_type				IN VARCHAR2 DEFAULT 'application/pdf'
 	) RETURN BLOB 
 	IS
-		l_file_name 	VARCHAR2(300);
 		l_file_blob		BLOB;
 		l_Job_ID		DOCUMENT_SCAN_AI_JOBS.Job_Id%TYPE;
 
@@ -1625,26 +2042,34 @@ $END
 			,		file_name
 			,		object_store_url
 			,		searchable_pdf_url
-			FROM	 DOCUMENT_SCAN_AI_DOCS
-			WHERE	 job_id = l_Job_ID;
-		lr_document		cr_document%ROWTYPE;
+			FROM	DOCUMENT_SCAN_AI_DOCS
+			WHERE	job_id = l_Job_ID;
+		lr_document	cr_document%ROWTYPE;
+		cr_files 	Document_Scan_Ai_Pkg.files_ref_cursor;
 	BEGIN
-		l_Job_ID := Process_Files (
+		OPEN cr_files FOR
+			SELECT 
+				'temporary.pdf' FILENAME,
+				p_mime_type MIME_TYPE,
+				0 CUSTOM_ID,
+				p_file_blob BLOB_CONTENT
+			FROM DUAL;
+		l_Job_ID := Document_Scan_Ai_Pkg.Process_Files_Cursor (
 			p_documentType			=> p_documentType, 
 			p_Language				=> p_Language, 
 			p_Key_Values_Extraction => 'N',
 			p_Table_Extraction		=> 'N',
 			p_generateSearchablePdf => 'Y',
 			p_exec_asynchronous 	=> 'N',
-			p_file_blob				=> p_file_blob,
-			p_mime_type				=> p_mime_type
+			p_files_cv				=> cr_files
 		);
+		CLOSE cr_files;
 		-- Get the OCI URL and Mimetytpe of the receipt file.
 		OPEN	cr_document;
 		FETCH cr_document INTO lr_document;
 		CLOSE cr_document;
 		
-		l_file_blob := get_file (p_request_url => lr_document.searchable_pdf_url);
+		l_file_blob := Document_Scan_Ai_Pkg.get_file (p_request_url => lr_document.searchable_pdf_url);
 		Delete_File (
 			p_object_name => lr_document.object_store_url,
 			p_job_id => l_Job_ID
