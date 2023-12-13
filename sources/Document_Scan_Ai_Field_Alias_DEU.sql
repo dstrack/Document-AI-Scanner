@@ -43,9 +43,17 @@ VALUES ('INVOICE', 'InvoiceId',	'Rechnungsnummer', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'InvoiceId',	'Rechnungsnr.', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'InvoiceId',	'Rechnung-Nr', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'InvoiceId',	'Rechnung-Nr.', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'InvoiceId',	'Rechnung', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'InvoiceId',	'Belegnummer', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'InvoiceId',	'Beleg-Nr.', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'InvoiceId',	'Beleg Nr.', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'InvoiceId',	'Re.- Nr.', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
@@ -53,9 +61,17 @@ VALUES ('INVOICE', 'InvoiceId',	'Rechn.-Nr.', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'InvoiceId',	'Re-Nr.', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'InvoiceId',	'Re-Nr', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'InvoiceId',	'RG Nr', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'InvoiceId',	'Schlussrechnungsnummer', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'InvoiceId',	'Zahlungsreferenz', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'InvoiceId',	'HONORARNOTE NR', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'InvoiceId',	'HONORARNOTE NR.', 'DEU');
 
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'InvoiceDate',	'Datum', 'DEU');
@@ -69,9 +85,13 @@ VALUES ('INVOICE', 'DueDate',	'Fllig am', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'DueDate',	'Flligkeit', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'DueDate',	'Falligkeit', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'DueDate',	'Flligkeitsdatum', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'DueDate',	'Zahlungstermin', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'DueDate',	'zahlbar bis', 'DEU');
 
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'VendorName',	'EmpfngerIn', 'DEU');
@@ -96,6 +116,8 @@ INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alia
 VALUES ('INVOICE', 'VendorTaxId',	'UID Nr.', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'VendorTaxId',	'UID-Nr.', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'VendorTaxId',	'UID-Nr', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'VendorTaxId',	'UID-Nummer', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
@@ -149,6 +171,8 @@ VALUES ('INVOICE', 'SubTotal',	'Netto Gesamtbetrag', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'SubTotal',	'Netto', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'SubTotal',	'Netto EUR', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'SubTotal',	'Betrag Netto', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'SubTotal',	'Betrag netto', 'DEU');
@@ -166,12 +190,25 @@ INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alia
 VALUES ('INVOICE', 'SubTotal',	'Betrag exkl. USt', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'SubTotal',	'Zwischensumme Netto', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'SubTotal',	'Rechnungssumme netto', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'SubTotal',	'Summe Netto', 'DEU');
 
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'TotalTax',	'Gesamtsteuer', 'DEU');
 
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'TaxRate',	'Ust%', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'TaxRate',	'Ust %', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'TaxRate',	'% Umsatzsteuer', 'DEU');
+
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'TotalVAT',	'Gesamtmehrwertsteuer', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'TotalVAT',	'+ MwSt', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'TotalVAT',	'MwSt', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
@@ -179,11 +216,13 @@ VALUES ('INVOICE', 'TotalVAT',	'MwSt.', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'TotalVAT',	'Mwst.', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'TotalVAT',	'MwSt EUR', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'TotalVAT',	'Mwst.-Betrag', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
-VALUES ('INVOICE', 'TotalVAT',	'USt. ', 'DEU');
+VALUES ('INVOICE', 'TotalVAT',	'USt.', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
-VALUES ('INVOICE', 'TotalVAT',	'Ust.', 'DEU');
+VALUES ('INVOICE', 'TotalVAT',	'Ust-Betr.', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'TotalVAT',	'20 % USt', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
@@ -202,6 +241,11 @@ INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alia
 VALUES ('INVOICE', 'TotalVAT',	'Betrag 20 %USt.', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'TotalVAT',	'Summe USt (EUR)', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'TotalVAT',	'20% Umsatzsteuer', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'TotalVAT',	'+ 20 % Umsatzsteuer', 'DEU');
+
 
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'InvoiceTotal',	'Rechnungsumme Brutto', 'DEU');
@@ -216,17 +260,29 @@ VALUES ('INVOICE', 'InvoiceTotal',	'Gesamtbetrag brutto', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'InvoiceTotal',	'Gesamtbetrag (inkl. USt)', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'InvoiceTotal',	'Gesamt-Summe', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'InvoiceTotal',	'Summe', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'InvoiceTotal',	'Summe Brutto', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'InvoiceTotal',	'Summe Brutto (EUR)', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'InvoiceTotal',	'Gesamt', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'InvoiceTotal',	'= Gesamt', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'InvoiceTotal',	'Rechnungsbetrag', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'InvoiceTotal',	'Rechnungsbetrag in EUR', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'InvoiceTotal',	'Brutto', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'InvoiceTotal',	'Betrag', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'InvoiceTotal',	'anweisbarer Betrag brutto', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'InvoiceTotal',	'Zu begleichende Forderungen', 'DEU');
 
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'AmountDue',	'Flliger Betrag', 'DEU');
@@ -240,6 +296,17 @@ INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alia
 VALUES ('INVOICE', 'AmountDue',	'berweisungsbetrag', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'AmountDue',	'Wir ersuchen um berweisung auf unser Konto', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'AmountDue',	'ein Kostenrestbetrag in Hhe von', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'AmountDue',	'Rest', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'AmountDue',	'offener Gesamtbetrag', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'AmountDue',	'Zahlbar', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'AmountDue',	'Offener Betrag', 'DEU');
+
 
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'ServiceAddress',	'Serviceadresse', 'DEU');
@@ -266,6 +333,8 @@ INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alia
 VALUES ('INVOICE', 'ServiceStartDate',	'Startdatum der Dienstleistung', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'ServiceStartDate',	'Dienstleistungsbeginn', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'ServiceStartDate',	'Leistungszeitraum von', 'DEU');
 
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'ServiceEndDate',	'Service Enddatum', 'DEU');

@@ -78,6 +78,9 @@ INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alia
 VALUES ('INVOICE', 'TotalTax',	'total tax', 'ENG');
 
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'TaxRate',	'Tax Rate', 'ENG');
+
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'TotalVAT',	'Total VAT', 'ENG');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'TotalVAT',	'20% VAT', 'ENG');
