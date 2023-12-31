@@ -453,8 +453,8 @@ $END
     BEGIN
     	v_string := REPLACE(p_Value, p_ISO_Currency, p_Currency);	-- replace currency_code with currency_character
     	v_string := REGEXP_REPLACE(v_string, '\s?\'||p_Currency||'\s?', p_Currency); -- remove blanks before or after currency_character
-    	v_string := REGEXP_REPLACE(v_string, '(\d) (\d)', '\1\2'); -- remove blanks between digits
    		v_string := RTRIM(v_string, '/√-');	-- remove marking characters after number
+   		v_string := SUBSTR(LTRIM(v_string, '*'), 1, 100); 	-- remove leadiing ***
         RETURN TRIM(v_string);
     END Get_Number_Normalized;
 
@@ -538,34 +538,37 @@ $END
         p_NumChars VARCHAR2 DEFAULT GC_NUMBER_CHARACTER,
         p_Currency VARCHAR2 DEFAULT GC_CURRENCY_CHARACTER,
         p_ISO_Currency VARCHAR2 DEFAULT NULL,
-        p_Territory VARCHAR2 DEFAULT NULL
+        p_Territory VARCHAR2 DEFAULT NULL,
+        p_Decimal_Required VARCHAR2 DEFAULT 'Y'
     ) RETURN NUMBER DETERMINISTIC
     IS PRAGMA UDF;
-    	v_string			VARCHAR2(4000);
+    	v_normal			VARCHAR2(200);
+    	v_string			VARCHAR2(200);
     	v_decimal_char   	VARCHAR2(1) := SUBSTR(p_NumChars, 1, 1);
     	v_group_char   		VARCHAR2(1) := SUBSTR(p_NumChars, 2, 1);
     	v_decimal_offset 	NUMBER;
     	v_decimal_offset2 	NUMBER;
     	v_group_offset 		NUMBER;
     BEGIN
-    	if TRANSLATE(p_Value, '0123456789', '----------') = p_Value then -- are there any digit in the string?
-    		RETURN 0;													-- return 0 when not digits found; 
+    	if NOT REGEXP_LIKE(p_Value, '\d') then
+    		RETURN 0;													-- return 0 when not digits found.
     	end if;
-
-    	v_string := Get_Number_Normalized(p_Value, p_Currency, p_ISO_Currency);
+    	v_normal := Get_Number_Normalized(p_Value, p_Currency, p_ISO_Currency);
+    	v_string := REPLACE(v_normal, p_Currency);
     	v_decimal_offset 	:= INSTR(v_string, v_decimal_char);
     	v_decimal_offset2 	:= INSTR(v_string, v_decimal_char, 1, 2);
-    	v_group_offset		:= INSTR(v_string, v_group_char);
+    	v_group_offset		:= INSTR(v_string, v_group_char, -1);
     	if (v_group_offset > 0 and LENGTH(v_string) - v_group_offset < 3) 	-- group char must be at least in the 3 position from end of string
     	or (v_decimal_offset > 0 and v_group_offset > v_decimal_offset)		-- group char must appear before decimal char 
+    	or (v_decimal_offset = 0 and p_Decimal_Required = 'Y')				-- decimal must be existing
     	or (v_decimal_offset2 > 0) 											-- only one decimal char is allowed
-    	or (v_group_offset > 0 and v_decimal_offset > 0 						-- the distance between group char and decimal char 
+    	or (v_group_offset > 0 and v_decimal_offset > 0 					-- the distance between group char and decimal char 
     		and mod(v_decimal_offset - v_group_offset, 4) != 0)				-- must be a multiple of 4
     	then 
     		RETURN 0;
     	end if;
-        RETURN VALIDATE_CONVERSION(v_string AS NUMBER, 
-        		Get_Number_Mask(v_string, p_NumChars, p_Currency), 
+        RETURN VALIDATE_CONVERSION(v_normal AS NUMBER, 
+        		Get_Number_Mask(v_normal, p_NumChars, p_Currency), 
             	Get_NLS_Param (p_NumChars, p_Currency, p_Territory));
     END Validate_Number_Conversion;
 
@@ -1087,15 +1090,14 @@ $END
 			where composite_pattern = 4
 		) s
 		connect by REGEXP_SUBSTR(s.text_line, '[A-Z][A-Za-z]*: [^ ]*', 1, LEVEL) IS NOT NULL
-		union all 
+		union all -- all complete text lines 
 		select s.job_id, s.document_id, s.page_number, 
 			trim(s.text_line) text_line, 
 			s.line_no, 1 element_no, 
 			s.line_height, s.x0, s.y0, s.x1, s.y1, s.x2, s.y2, s.x3, s.y3,
 			s.config_id, s.context_id, s.job_language_code, s.language_code,
-			s.job_document_type, s.document_type_code, s.composite_pattern
-		from FULL_LINES s
-		where composite_pattern = 0;
+			s.job_document_type, s.document_type_code, 0 composite_pattern
+		from FULL_LINES s;
 		v_in_rows tab_text_fragments_type;
 	BEGIN 
 		OPEN text_cur;
@@ -1145,25 +1147,34 @@ $END
 			where (d.job_id = p_Job_Id or p_Job_Id IS NULL)
 			and (d.document_id = p_document_id OR p_document_id IS NULL)
 		)
+		, FIELD_ALIAS as (
+			select fa.config_id, fa.Document_type, fa.language_code, fa.Field_label,
+					fa.field_alias, 
+					UPPER(REPLACE(fa.field_alias,'%','\%'))||'%' field_alias_like, 
+					UPPER(fa.field_alias) field_alias_comp,
+					LENGTH(fa.field_alias) field_alias_length
+			from DOCUMENT_SCAN_AI_FIELD_ALIAS fa 
+		)
 		, LABEL_LINES as (
 			select s.document_id, s.job_id, s.page_number, 
 				s.text_line, 
 				s.line_no, s.element_no,
-				s.line_height, s.x0, s.y0, s.x1, s.y1, 
+				s.line_height, s.x0, s.y0, s.x1, s.y1, s.y3, 
 				s.config_id, s.context_id, s.job_language_code, s.language_code,
 				s.job_document_type, s.document_type_code,
 				s.composite_pattern,
-				INSTR(s.text_line, ':', length(fa.field_alias)+1) colon_offset,
-				ltrim(substr(s.text_line, length(fa.field_alias)+1), ': ') data_part,
+				instr(s.text_line, ':') colon_offset,
+				substr(s.text_line, 1, fa.field_alias_length) label_part,
+				ltrim(substr(s.text_line, greatest(fa.field_alias_length,instr(s.text_line, ':'))+1), '.: ') data_part,
 				fa.field_alias, fa.Field_label, ft.Value_Type
 			from TEXT_FRAGMENTS s
-			join DOCUMENT_SCAN_AI_FIELD_ALIAS fa 
-				on UPPER(s.text_line) LIKE UPPER(fa.field_alias||'%')
+			left outer join FIELD_ALIAS fa 
+				on UPPER(s.text_line) LIKE fa.field_alias_like ESCAPE '\'
 				and s.config_id = fa.config_id 
 				and fa.language_code IN (s.language_code, s.job_language_code)
 				and fa.Document_type in (s.job_document_type, s.document_type_code)
-				and (UPPER(s.text_line) = UPPER(fa.field_alias) or substr(s.text_line, length(fa.field_alias)+1, 1) in (' ', ':'))
-			join DOCUMENT_SCAN_AI_FIELD_TYPES ft 
+				and (UPPER(s.text_line) = fa.field_alias_comp or INSTR('.: ', substr(s.text_line, fa.field_alias_length+1, 1)) > 0)
+			left outer join DOCUMENT_SCAN_AI_FIELD_TYPES ft 
 				on ft.Document_type = fa.Document_type
 				and ft.config_id = fa.config_id
 				and ft.Field_label = fa.Field_label
@@ -1172,9 +1183,6 @@ $END
 			select lb.document_id, lb.job_id, lb.page_number, lb.line_no, lb.element_no
 				, lb.item_label, lb.item_value, lb.x0, lb.y0
 				, lb.Field_label
-				, round(lb.label_height, 4) label_height
-				, round(lb.value_height, 4) value_height
-				, round(value_height / label_height, 4) height_ratio
 				, lb.Value_Type
 				, case 
 					when lb.Value_Type = 'DATE' and Document_Scan_Ai_Pkg.Validate_Date_Conversion(lb.item_value, L.common_date_format, L.nls_date_language) = 1 
@@ -1183,62 +1191,79 @@ $END
 					then 'NUMBER' 
 					else Document_Scan_Ai_Pkg.Get_String_Type (lb.Value_Type, lb.item_value)
 				end Item_Value_Type
-				, case when Document_Scan_Ai_Pkg.Validate_Date_Conversion(lb.item_value, L.common_date_format, L.nls_date_language) = 0
+				, case when lb.Value_Type = 'NUMBER'
 					and Document_Scan_Ai_Pkg.Validate_Number_Conversion(lb.item_value, L.nls_numeric_characters, L.nls_currency, L.nls_iso_currency, L.territory) = 1 
 					then Document_Scan_Ai_Pkg.FM9_TO_Number(lb.item_value, L.nls_numeric_characters, L.nls_currency, L.nls_iso_currency, L.territory, p_Default_On_Error=>0)
 				end Number_value
-				, case when Document_Scan_Ai_Pkg.Validate_Date_Conversion(lb.item_value, L.common_date_format, L.nls_date_language) = 1 
+				, case when lb.Value_Type = 'DATE'
+					and Document_Scan_Ai_Pkg.Validate_Date_Conversion(lb.item_value, L.common_date_format, L.nls_date_language) = 1 
 					then Document_Scan_Ai_Pkg.To_Date_Conversion(lb.item_value, L.common_date_format, L.nls_date_language)
 				end Date_Value 
 				, case when l.iso_code = lb.language_code then 1 else 2 end language_rank
 				, l.territory
 				, lb.category
+				, lb.composite_pattern
 			from (
 				-- find composite lines with label : value  
 				select lb.document_id, lb.job_id, lb.page_number, lb.line_no
-					, lb.field_alias item_label, lb.Field_label, lb.Value_Type
+					, lb.label_part item_label, lb.Field_label, lb.Value_Type
 					, lb.data_part item_value
 					, lb.x0, lb.y0, lb.element_no, lb.job_document_type, lb.document_type_code
 					, lb.config_id, lb.context_id, lb.language_code, lb.job_language_code, 1 category
-					, lb.line_height label_height, lb.line_height value_height
+					, lb.line_height label_height, lb.line_height value_height, lb.composite_pattern
+					, 1 element_cnt
 				from LABEL_LINES lb
-				where (colon_offset != 0 or Document_Scan_Ai_Pkg.Get_String_Type (lb.Value_Type, lb.text_line) != 'INITCAP')
+				where (lb.colon_offset != 0 
+					or REGEXP_LIKE(label_part, '^[A-Z]+$')	-- label is upper case only
+					or Document_Scan_Ai_Pkg.Get_String_Type (lb.Value_Type, lb.data_part) = lb.Value_Type)
 				and lb.data_part IS NOT NULL
+				and lb.field_alias IS NOT NULL 
 				union all
 				-- find labels (optional ending with :) followed by a value on the next line below
-				select lb.document_id, lb.job_id, lb.page_number, lv.line_no
-					, lb.field_alias item_label, lb.Field_label, lb.Value_Type
+				select lb.document_id, lb.job_id, lb.page_number, lb.line_no
+					, lb.label_part item_label, lb.Field_label, lb.Value_Type
 					, lv.text_line item_value
-					, lv.x0, lv.y0, 1 element_no, lb.job_document_type, lb.document_type_code
+					, lv.x0, lv.y0
+					, sum(case when lv.field_alias IS NULL and lv.colon_offset !=  LENGTH(lv.text_line) then 0 else 1 end) 
+						over (partition by lb.job_id, lb.document_id, lb.page_number, lb.line_no order by lv.y0) element_no
+					, lb.job_document_type, lb.document_type_code
 					, lb.config_id, lb.context_id, lb.language_code, lb.job_language_code, 3 category
-					, lb.line_height label_height, lv.line_height value_height
-				from LABEL_LINES lb, TEXT_FRAGMENTS lv
-				where lb.document_id = lv.document_id
-				and lb.page_number = lv.page_number
-				and UPPER(lb.text_line) in (UPPER(lb.field_alias), UPPER(lb.field_alias)||':')
-				and INSTR(lv.text_line, ':') !=  LENGTH(lv.text_line) -- does not end with colon :
-				and lb.y0 < lv.y0              	-- label above value 
-				and (lv.y0 - lb.y0) < lb.line_height * 2.5		-- near by; in the next lines below
-				and (abs(lb.x0 - lv.x0) < lb.line_height * 2.5 or abs(lb.x1 - lv.x1) < lb.line_height * 2.5) -- same column, left or right aligned 
+					, lb.line_height label_height, lv.line_height value_height, 0 composite_pattern
+					, count(distinct lv.line_no) over (partition by lb.job_id, lb.document_id, lb.page_number, lb.line_no) element_cnt
+				from LABEL_LINES lb, LABEL_LINES lv
+				where lb.job_id = lv.job_id
+				and lb.document_id = lv.document_id
+				and lb.page_number = lv.page_number 
+				and lb.field_alias IS NOT NULL 		-- lv.text_line starts with lb.field_alias
+				and lb.y3 < lv.y0              	-- label above value 
+				and (lv.y0 - lb.y3) < lb.line_height * 3.8		-- near by; in the next lines below
+                and lb.x0 <= lv.x1				-- label left side before data right side
+				and (abs(lb.x0 - lv.x0) < lb.line_height * 2.8 or abs(lb.x1 - lv.x1) < lb.line_height * 2.8) -- same column, left or right aligned 
+				and length(lv.text_line) > 1
 				and lv.composite_pattern = 0
 				and lb.composite_pattern = 0
 				union all
 				-- find labels with known alias followed by a value in the same line.
 				select  
-					lb.document_id, lb.job_id, lb.page_number, lv.line_no
-					, lb.field_alias item_label, lb.Field_label, lb.Value_Type
+					lb.document_id, lb.job_id, lb.page_number, lb.line_no
+					, lb.label_part item_label, lb.Field_label, lb.Value_Type
 					, lv.text_line item_value
-					, lv.x0, lv.y0, 1 element_no, lb.job_document_type, lb.document_type_code
+					, lv.x0, lv.y0
+					, sum(case when lv.field_alias IS NULL and lv.colon_offset !=  LENGTH(lv.text_line) then 0 else 1 end) 
+						over (partition by lb.job_id, lb.document_id, lb.page_number, lb.line_no order by lv.x0) element_no
+					, lb.job_document_type, lb.document_type_code
 					, lb.config_id, lb.context_id, lb.language_code, lb.job_language_code, 4 category
-					, lb.line_height label_height, lv.line_height value_height
-				from LABEL_LINES lb, TEXT_FRAGMENTS lv
-				where lb.document_id = lv.document_id
+					, lb.line_height label_height, lv.line_height value_height, 0 composite_pattern
+					, 1 element_cnt
+				from LABEL_LINES lb, LABEL_LINES lv
+				where lb.job_id = lv.job_id
+				and lb.document_id = lv.document_id
 				and lb.page_number = lv.page_number
-				--and UPPER(lb.text_line) in (UPPER(lb.field_alias), UPPER(lb.field_alias)||':')
+				and lb.field_alias IS NOT NULL 
 				and UPPER(RTRIM(lb.text_line, ': ')) = UPPER(lb.field_alias)
-				and INSTR(lv.text_line, ':') !=  LENGTH(lv.text_line) -- does not end with colon :
 				and lb.x0 < lv.x0              -- label before value 
 				and abs(lb.y0 - lv.y0) < lb.line_height * 0.8 -- same line 
+				and length(lv.text_line) > 1
 				and lv.composite_pattern = 0
 				and lb.composite_pattern = 0
 			) lb 
@@ -1246,18 +1271,14 @@ $END
 				select Context_Id, Client_Name, Client_Email, Client_Tax_Id, Client_Phone, Client_Iban, Client_Swift_Bic
 				from table(Document_Scan_Ai_Pkg.pipe_context_fields(lb.context_id))
 			) cx 
-			join DOCUMENT_SCAN_AI_LANGUAGES l 
+			left outer join DOCUMENT_SCAN_AI_LANGUAGES l 
 				on l.iso_code IN (lb.language_code, lb.job_language_code)
 				and lb.config_id = l.config_id
-			where not exists (
-				select 1
-				from DOCUMENT_SCAN_AI_FIELD_ALIAS fx
-				where UPPER(RTRIM(lb.item_value, ': ')) = UPPER(fx.field_alias)
-				-- UPPER(lb.item_value) in (UPPER(fx.field_alias), UPPER(fx.field_alias||':'))
-				and lb.config_id = fx.config_id 
-				and fx.language_code IN (lb.language_code, lb.job_language_code)
-				and fx.Document_type in (lb.job_document_type, lb.document_type_code)
-			)
+				and lb.Value_Type in ('DATE','NUMBER') 
+			where (lb.element_cnt = 1 or lb.Value_Type not in ('DATE','NUMBER'))
+			-- and (lb.element_no = 0 or lb.category = 1)
+			and (lb.element_no = 0 or lb.Value_Type not in ('DATE','NUMBER'))
+			and not (lb.Field_label = 'BankPurpose' and lb.category != 3)
 			and not (lb.Field_label = 'VendorName' and NVL(UPPER(cx.Client_Name), '+') = UPPER(lb.item_value))
 			and not (lb.Field_label = 'VendorEmail' and NVL(UPPER(cx.Client_Email), '+') = UPPER(lb.item_value))
 			and not (lb.Field_label = 'VendorPhone' and NVL(REPLACE(cx.Client_Phone, ' '), '+') = REPLACE(lb.item_value, ' '))
@@ -1268,22 +1289,22 @@ $END
 			, case when (Value_Type = Item_Value_Type or Value_Type = 'STRING')
 				then 1 else 0 
 			end as Valid_Conversion
-			, DENSE_RANK() OVER (PARTITION BY Document_Id, Field_label
+			, DENSE_RANK() OVER (PARTITION BY Job_Id, Document_Id, Field_label
 				ORDER BY case when (Value_Type = Item_Value_Type or Value_Type = 'STRING') 
 						then 0 else 1 end
-					, case when page_number <= 4 then 0 else 1 end
-					, LENGTH(ITEM_LABEL) DESC, ITEM_LABEL
-					, ABS(NUMBER_VALUE) desc nulls last, DATE_VALUE desc nulls last
+					, LENGTH(ITEM_LABEL) desc, ITEM_LABEL
+					, language_rank
+					, page_number -- first occourence
+					--, ABS(NUMBER_VALUE) desc nulls last, DATE_VALUE desc nulls last
 					, category
 					, case 
 						when category = 3 then y0  -- first element below label
 						when  category = 4 and Value_Type = 'NUMBER' then 1-x0 -- last element in the line
 						else x0 end -- next element in the line
-					, height_ratio desc
-					, page_number -- first occourence
 					, line_no
+					, composite_pattern desc
 					, element_no
-					, language_rank, territory
+					, territory
 			) RANK
 		from TEXT_KEY_VALUES kv;
 
@@ -1336,6 +1357,14 @@ $END
 			where (d.job_id = p_Job_Id or p_Job_Id IS NULL)
 			and (d.document_id = p_document_id OR p_document_id IS NULL)
 		)
+		, FIELD_ALIAS as (
+			select fa.config_id, fa.Document_type, fa.language_code, fa.Field_label,
+					fa.field_alias, 
+					UPPER(REPLACE(fa.field_alias,'%','\%'))||'%' field_alias_like, 
+					UPPER(fa.field_alias) field_alias_comp,
+					LENGTH(fa.field_alias) field_alias_length
+			from DOCUMENT_SCAN_AI_FIELD_ALIAS fa 
+		)
 		select distinct field_text
 			, FIRST_VALUE(field_alias) OVER (PARTITION BY field_text ORDER BY LENGTH(field_alias) DESC, field_alias DESC) field_alias
 			, field_type
@@ -1353,12 +1382,12 @@ $END
 				, NVL(NULLIF(s.job_document_type, 'OTHERS'), s.document_type_code) document_type
 				, document_id, job_id, 'colon' match_pattern
 			from TEXT_FRAGMENTS s
-			left outer join DOCUMENT_SCAN_AI_FIELD_ALIAS fa 
-				on UPPER(s.text_line) LIKE UPPER(fa.field_alias||'%')
+			left outer join FIELD_ALIAS fa 
+				on UPPER(s.text_line) LIKE fa.field_alias_like ESCAPE '\'
 				and s.config_id = fa.config_id 
 				and fa.language_code IN (s.language_code, s.job_language_code)
 				and fa.Document_type in (s.job_document_type, s.document_type_code)
-				and (UPPER(s.text_line) = UPPER(fa.field_alias) or substr(s.text_line, length(fa.field_alias)+1, 1) in (' ', ':'))
+				and (UPPER(s.text_line) = fa.field_alias_comp or substr(s.text_line, fa.field_alias_length+1, 1) in (' ', ':'))
 			where instr(s.text_line,':') > 1 	-- line contains a colon
 			and length(s.text_line ) between 2 and 40
 			and REGEXP_LIKE(s.text_line, '^\D+') -- line begins with a word
@@ -1371,8 +1400,8 @@ $END
 				, COALESCE(NULLIF(lb.job_document_type, 'OTHERS'), lb.document_type_code) Document_type
 				, document_id, job_id, 'pos' match_pattern
 			from TEXT_FRAGMENTS lb
-			left outer join DOCUMENT_SCAN_AI_FIELD_ALIAS fa 
-				on lb.text_line = fa.field_alias
+			left outer join FIELD_ALIAS fa 
+				on UPPER(lb.text_line) = fa.field_alias_comp
 				and lb.config_id = fa.config_id 
 				and fa.language_code IN (lb.language_code, lb.job_language_code)
 				and fa.Document_type in (lb.job_document_type, lb.document_type_code)
@@ -1386,7 +1415,8 @@ $END
 				JOIN DOCUMENT_SCAN_AI_LANGUAGES l 
 					ON l.iso_code IN (lv.language_code, lv.job_language_code)
 					AND l.config_id = lv.config_id
-				where lb.document_id = lv.document_id
+				where lb.job_id = lv.job_id
+				and lb.document_id = lv.document_id
 				and lb.page_number = lv.page_number
 				and lb.job_id = lv.job_id
 				and lv.composite_pattern = 0
@@ -1397,7 +1427,7 @@ $END
 				and ((
 					-- find labels (optional ending with :) followed by a value on the next line below
 					lb.y0 < lv.y0              	-- label above value 
-					and (lv.y0 - lb.y0) < lb.line_height * 2.5		-- near by; in the next lines below
+					and (lv.y0 - lb.y0) < lb.line_height * 2.8		-- near by; in the next lines below
 					and (abs(lb.x0 - lv.x0) < lb.line_height * 2.5 or abs(lb.x1 - lv.x1) < lb.line_height * 2.5) -- same column, left or right aligned 
 				  ) or ( 
 					-- find labels with known alias followed by a value in the same line.
@@ -1465,6 +1495,111 @@ $END
         ;
 	END Load_Document_Field_Alias;
 
+	PROCEDURE Load_Document_Derived_Values (
+		p_Job_Id 		IN DOCUMENT_SCAN_AI_DOCS.Job_Id%TYPE DEFAULT NULL,
+		p_document_id 	IN DOCUMENT_SCAN_AI_DOCS.document_id%TYPE DEFAULT NULL
+	)
+	IS 
+	BEGIN 
+		-- Extract Key-Values from text lines with matching labels from DOCUMENT_SCAN_AI_FIELD_ALIAS
+        MERGE INTO DOCUMENT_SCAN_AI_FIELDS D
+        USING (
+			with KEY_VALUE_INVOICE as (
+				select a.document_id
+				    , a.job_id
+					, MAX(DECODE(a.FIELD_LABEL,'InvoiceTotal', a.NUMBER_VALUE)) Invoice_Total
+					, MAX(DECODE(a.FIELD_LABEL,'SubTotal', a.NUMBER_VALUE)) SubTotal
+					, MAX(DECODE(a.FIELD_LABEL,'TotalTax', a.NUMBER_VALUE)) Total_Tax
+					, MAX(DECODE(a.FIELD_LABEL,'TotalVAT', a.NUMBER_VALUE)) Total_VAT
+					, MAX(DECODE(a.FIELD_LABEL,'TaxRate', a.NUMBER_VALUE)) Tax_Rate
+				from V_DOCUMENT_SCAN_AI_KEY_VALUE a 
+				join DOCUMENT_SCAN_AI_FIELD_TYPES t 
+					on T.Document_type IN (a.document_type, a.job_document_type) 
+					and a.field_label = t.field_label
+					and a.config_id = t.config_id
+				where (a.job_id = p_Job_Id or p_Job_Id IS NULL)
+				and (a.document_id = p_document_id OR p_document_id IS NULL)
+				and t.Document_type = 'INVOICE'
+				and a.VALID_CONVERSION = 1
+				group by a.document_id
+					, a.file_name
+					, a.job_id
+					, a.Context_Id
+					, a.Config_Id
+			), DERIVED_VALUES as (
+				SELECT d.document_id
+					 , case when e.Total_vat is not null 
+							then e.Total_vat
+						when e.Subtotal > 0 and e.Invoice_total > e.Subtotal and e.Subtotal > e.Invoice_total - e.Subtotal
+							then e.Invoice_total - e.Subtotal
+						when e.Total_tax > 0
+							then e.Total_tax
+						end as Total_vat
+					 , case 
+						when e.Subtotal > e.Total_vat and e.Total_vat > 0 and e.Total_vat < e.Invoice_total
+							then round(((e.Subtotal + e.Total_vat) / e.Subtotal - 1) * 100, 1)
+						when e.Subtotal > e.Total_tax and e.Total_tax > 0 and e.Total_tax < e.Invoice_total
+							then round(((e.Subtotal + e.Total_tax) / e.Subtotal - 1) * 100, 1)
+						when e.Subtotal > 0 and e.Invoice_total > e.Subtotal and e.Subtotal > e.Invoice_total - e.Subtotal
+							then round((e.Invoice_total / e.Subtotal - 1) * 100, 1)
+						when e.Invoice_total > e.Total_vat and e.Total_vat > 0
+							then round((e.Invoice_total / (e.Invoice_total - e.Total_vat) - 1) * 100, 1)
+						when e.Invoice_total > e.Total_tax and e.Total_tax > 0
+							then round((e.Invoice_total / (e.Invoice_total - e.Total_tax) - 1) * 100, 1)
+						when e.Total_vat = 0 
+						or e.Total_tax = 0
+						or e.Invoice_total = nvl(e.Subtotal, e.Invoice_total) 
+						or e.Invoice_total = e.Tax_Rate 
+							then 0
+							else e.Tax_Rate
+						end as Tax_Rate
+					  , 'NLS_NUMERIC_CHARACTERS = ''.,''' num_chars
+				FROM   DOCUMENT_SCAN_AI_DOCS d 
+				LEFT OUTER JOIN KEY_VALUE_INVOICE e ON d.document_id = e.document_id and d.job_id = e.job_id
+			)
+			SELECT document_id, 
+					'KEY_VALUE' as field_type_code, 
+					'TaxRate' as field_label, 
+					0.99 as label_score, 
+					to_char(Tax_Rate,'990D00', num_chars) field_value, 
+					1 as page_number, 
+					99 as line_number, 
+					'NUMBER' as value_type, 
+					to_char(Tax_Rate,'990D00', num_chars) as field_text,
+					'Tax Rate' as field_alias,
+					1 user_confirmed
+			FROM DERIVED_VALUES d
+			UNION ALL 
+			SELECT document_id, 
+					'KEY_VALUE' as field_type_code, 
+					'TotalVAT' as field_label, 
+					0.99 as label_score, 
+					to_char(Total_vat,'999G999G999G999G990D00', num_chars) field_value, 
+					1 as page_number, 
+					99 as line_number, 
+					'NUMBER' as value_type, 
+					to_char(Total_vat,'999G999G999G999G990D00', num_chars) as field_text,
+					'Total VAT' as field_alias,
+					1 user_confirmed
+			FROM DERIVED_VALUES 
+        ) S
+        ON (D.DOCUMENT_ID = S.DOCUMENT_ID AND D.PAGE_NUMBER = S.PAGE_NUMBER AND D.FIELD_TYPE_CODE = S.FIELD_TYPE_CODE 
+        	AND D.FIELD_LABEL = S.FIELD_LABEL AND D.FIELD_TEXT = S.FIELD_TEXT)
+        WHEN MATCHED THEN
+            UPDATE SET D.FIELD_VALUE = case when S.user_confirmed = 1 then S.FIELD_VALUE else D.FIELD_VALUE end, 
+                D.VALUE_TYPE = S.VALUE_TYPE, D.LABEL_SCORE = S.LABEL_SCORE,
+                D.FIELD_ALIAS = S.FIELD_ALIAS, D.USER_CONFIRMED = S.USER_CONFIRMED
+        WHEN NOT MATCHED THEN
+            INSERT (D.DOCUMENT_ID, D.FIELD_TYPE_CODE, D.FIELD_LABEL, D.LABEL_SCORE, 
+                D.FIELD_VALUE, D.PAGE_NUMBER, D.LINE_NUMBER, 
+                D.VALUE_TYPE, D.FIELD_TEXT, D.FIELD_ALIAS, D.USER_CONFIRMED)
+            VALUES (S.DOCUMENT_ID, S.FIELD_TYPE_CODE, S.FIELD_LABEL, S.LABEL_SCORE, 
+                S.FIELD_VALUE, S.PAGE_NUMBER, S.LINE_NUMBER, 
+                S.VALUE_TYPE, S.FIELD_TEXT, S.FIELD_ALIAS, S.USER_CONFIRMED)
+        ;
+        
+	END Load_Document_Derived_Values;
+
 	PROCEDURE Load_Document_Fields (
 		p_Job_Id 		IN DOCUMENT_SCAN_AI_DOCS.Job_Id%TYPE DEFAULT NULL,
 		p_document_id 	IN DOCUMENT_SCAN_AI_DOCS.document_id%TYPE DEFAULT NULL
@@ -1516,6 +1651,7 @@ $END
 		AND (s.document_id = p_document_id OR p_document_id IS NULL);
 
 		Load_Document_Field_Alias(p_Job_Id => p_Job_Id, p_document_id => p_document_id);
+		Load_Document_Derived_Values(p_Job_Id => p_Job_Id, p_document_id => p_document_id);
 		
 		INSERT INTO DOCUMENT_SCAN_AI_TABLES (document_id,page_number,table_number,rowCount,columnCount,column_names)
 		SELECT s.document_id, jt.page_number, jt.table_number, jt.rowCount, jt.columnCount, 

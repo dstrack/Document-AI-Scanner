@@ -143,20 +143,20 @@ FROM DOCUMENT_SCAN_AI_DOCS d;
 ------------------------------------------------------------------------------------------
 
 CREATE OR REPLACE VIEW  V_DOCUMENT_SCAN_AI_KEY_VALUE (
-    WORD_ID, DOCUMENT_ID, FILE_NAME, DOCUMENT_TYPE, JOB_DOCUMENT_TYPE, CONFIG_ID,
+    WORD_ID, DOCUMENT_ID, FILE_NAME, DOCUMENT_TYPE, JOB_DOCUMENT_TYPE, CONFIG_ID, CUSTOM_ID,
     PAGE_NUMBER, FIELD_LABEL, LABEL_SCORE, FIELD_VALUE, VALUE_TYPE, FIELD_TEXT, 
     USER_CONFIRMED, USER_LABEL, FIELD_ALIAS, NUMBER_VALUE, DATE_VALUE, VALID_CONVERSION, TERRITORY,
     FIELD_NAME_ENG, FIELD_NAME_DEU, PAGE_ITEM_NAME,
     JOB_ID, CONTEXT_ID
 ) DEFAULT COLLATION USING_NLS_COMP  AS 
-SELECT WORD_ID, DOCUMENT_ID, FILE_NAME, DOCUMENT_TYPE, JOB_DOCUMENT_TYPE, CONFIG_ID,
+SELECT WORD_ID, DOCUMENT_ID, FILE_NAME, DOCUMENT_TYPE, JOB_DOCUMENT_TYPE, CONFIG_ID, CUSTOM_ID,
     PAGE_NUMBER, FIELD_LABEL, LABEL_SCORE, FIELD_VALUE, VALUE_TYPE, FIELD_TEXT, 
     USER_CONFIRMED, USER_LABEL, FIELD_ALIAS, NUMBER_VALUE, DATE_VALUE, VALID_CONVERSION, TERRITORY,
     FIELD_NAME_ENG, FIELD_NAME_DEU, PAGE_ITEM_NAME,
     JOB_ID, CONTEXT_ID
 FROM (
     SELECT DISTINCT
-        WORD_ID, DOCUMENT_ID, FILE_NAME, DOCUMENT_TYPE, JOB_DOCUMENT_TYPE, CONFIG_ID,
+        WORD_ID, DOCUMENT_ID, FILE_NAME, DOCUMENT_TYPE, JOB_DOCUMENT_TYPE, CONFIG_ID, CUSTOM_ID,
         PAGE_NUMBER, FIELD_LABEL, LABEL_SCORE, FIELD_VALUE, VALUE_TYPE, FIELD_TEXT, 
         USER_CONFIRMED, USER_LABEL, FIELD_ALIAS, NUMBER_VALUE, DATE_VALUE, VALID_CONVERSION, TERRITORY,
         FIELD_NAME_ENG, FIELD_NAME_DEU, PAGE_ITEM_NAME,
@@ -167,43 +167,39 @@ FROM (
                         ABS(F.NUMBER_VALUE) desc nulls last, F.DATE_VALUE desc nulls last, F.word_id) RANK
     FROM (
         SELECT F.word_id
-        ,      F.document_id
-        ,      D.file_name
-        ,      D.document_type_code document_type
-        ,      J.documentType job_document_type
-        ,      J.config_id
-        ,      F.page_number
-        ,      F.field_label
-        ,      ROUND(F.label_score * 100, 0) label_score
-        ,      F.field_value
-        ,      F.value_type
-        ,      F.field_text
-        ,      F.user_confirmed
-        ,      F.user_label
-        ,      F.field_alias
-        ,      case when L.iso_code = D.language_code then 0 else 1 end language_rank
-        ,      L.territory
-        ,      case when (F.value_type = 'NUMBER' or FT.value_type = 'NUMBER') 
+               , F.document_id
+               , D.file_name
+               , D.document_type_code document_type
+               , J.documentType job_document_type
+               , J.config_id
+               , D.custom_id
+               , F.page_number
+               , F.field_label
+               , ROUND(F.label_score * 100, 0) label_score
+               , F.field_value
+               , F.value_type
+               , F.field_text
+               , F.user_confirmed
+               , F.user_label
+               , F.field_alias
+               , case when L.iso_code = D.language_code then 0 else 1 end language_rank
+               , L.territory
+               , case when (F.value_type = 'NUMBER' or FT.value_type = 'NUMBER') 
                     and Document_Scan_Ai_Pkg.Validate_Number_Conversion(F.field_text, L.nls_numeric_characters, L.nls_currency, L.nls_iso_currency, L.territory) = 1 then 1 
-                    when F.value_type = 'NUMBER' and L.iso_code = C.processor_language_code
-                    and Document_Scan_Ai_Pkg.Validate_Number_Conversion(F.field_value, C.number_character, C.currency_character, L.nls_iso_currency, L.territory) = 1 then 1 
                     when (F.value_type = 'DATE' or FT.value_type = 'DATE')
                     and Document_Scan_Ai_Pkg.Validate_Date_Conversion(F.field_text, L.common_date_format, L.nls_date_language) = 1 then 1
                     when F.value_type = 'DATE' and L.iso_code = C.processor_language_code and VALIDATE_CONVERSION(F.field_value AS NUMBER) = 1 then 1 
                     when F.value_type = 'DATE'  and L.iso_code = C.processor_language_code and VALIDATE_CONVERSION(F.field_value AS TIMESTAMP, 'YYYY-MM-DD"T"HH24:MI:SS.FF"Z"') = 1 then 1 
                     when FT.value_type = 'DATE' and FT.format_mask IS NOT NULL and VALIDATE_CONVERSION(F.field_value AS DATE, FT.format_mask) = 1 then 1 
-					when Document_Scan_Ai_Pkg.Get_String_Type (FT.Value_Type, F.field_text) = FT.Value_Type then 1
+                    when Document_Scan_Ai_Pkg.Get_String_Type (FT.Value_Type, F.field_text) = FT.Value_Type then 1
                     when FT.value_type = 'STRING' then 1
-					else 0
+                    else 0
                end Valid_Conversion
-        ,      case when (F.value_type = 'NUMBER' or FT.value_type = 'NUMBER') 
+               , case when (F.value_type = 'NUMBER' or FT.value_type = 'NUMBER') 
                     and Document_Scan_Ai_Pkg.Validate_Number_Conversion(F.field_text, L.nls_numeric_characters, L.nls_currency, L.nls_iso_currency, L.territory) = 1 
                     then Document_Scan_Ai_Pkg.FM9_TO_Number(F.field_text, L.nls_numeric_characters, L.nls_currency, L.nls_iso_currency, L.territory, p_Default_On_Error=>0)
-                    when F.value_type = 'NUMBER' and L.iso_code = C.processor_language_code
-                    and Document_Scan_Ai_Pkg.Validate_Number_Conversion(F.field_value, C.number_character, C.currency_character, L.nls_iso_currency, L.territory) = 1 
-                    then Document_Scan_Ai_Pkg.FM9_TO_Number(F.field_value, C.number_character, C.currency_character, L.nls_iso_currency, L.territory, p_Default_On_Error=>0)
                end Number_value
-        ,      case 
+               , case 
                     when (F.value_type = 'DATE' or FT.value_type = 'DATE')
                     and Document_Scan_Ai_Pkg.Validate_Date_Conversion(F.field_text, L.common_date_format, L.nls_date_language) = 1 
                         then Document_Scan_Ai_Pkg.To_Date_Conversion(F.field_text, L.common_date_format, L.nls_date_language)
@@ -214,27 +210,27 @@ FROM (
                     when FT.value_type = 'DATE' and FT.format_mask IS NOT NULL and VALIDATE_CONVERSION(F.field_value AS DATE, FT.format_mask) = 1 
                         then TO_DATE(F.field_value, FT.format_mask)
                end Date_Value 
-        ,	   ft.field_name_eng, ft.field_name_deu, ft.page_item_name
-        ,      D.job_id
-        ,      J.Context_Id
+               , ft.field_name_eng, ft.field_name_deu, ft.page_item_name
+               , D.job_id
+               , J.Context_Id
         FROM   (
             SELECT F.word_id, F.document_id, F.page_number
-            ,      F.field_label
-            ,      F.label_score, F.field_value, F.value_type
-            ,      NVL(F.field_text, F.field_value) field_text
-            ,      F.user_confirmed
-            ,      F.user_label
-            ,      F.field_alias
+                   , F.field_label
+                   , F.label_score, F.field_value, F.value_type
+                   , NVL(F.field_text, F.field_value) field_text
+                   , F.user_confirmed
+                   , F.user_label
+                   , F.field_alias
             FROM DOCUMENT_SCAN_AI_FIELDS F
             WHERE  F.field_type_code = 'KEY_VALUE' 
             UNION ALL 
             SELECT F.word_id, F.document_id, F.page_number
-            ,      F.user_label as field_label
-            ,      F.label_score, F.field_value, F.value_type
-            ,      NVL(F.field_text, F.field_value) field_text
-            ,      1 as user_confirmed
-            ,      F.user_label
-            ,      F.field_alias
+                   , F.user_label as field_label
+                   , F.label_score, F.field_value, F.value_type
+                   , NVL(F.field_text, F.field_value) field_text
+                   , 1 as user_confirmed
+                   , F.user_label
+                   , F.field_alias
             FROM DOCUMENT_SCAN_AI_FIELDS F
             WHERE  F.user_label IS NOT NULL
         ) F 
@@ -299,8 +295,8 @@ CREATE OR REPLACE VIEW  V_DOCUMENT_SCAN_AI_LINE_ITEM (
 ,      case when (F.value_type = 'NUMBER' or T.value_type = 'NUMBER') 
             and Document_Scan_Ai_Pkg.Validate_Number_Conversion(F.field_text, L.nls_numeric_characters, L.nls_currency, L.nls_iso_currency, L.territory) = 1 then 1 
             when F.value_type = 'NUMBER' and L.iso_code = C.processor_language_code
-            and Document_Scan_Ai_Pkg.Validate_Number_Conversion(F.field_value, C.number_character, C.currency_character, L.nls_iso_currency, L.territory) = 1 then 1 
-            when (F.value_type = 'DATE' or T.value_type = 'DATE')
+            --and Document_Scan_Ai_Pkg.Validate_Number_Conversion(F.field_value, C.number_character, C.currency_character, L.nls_iso_currency, L.territory) = 1 then 1 
+            --when (F.value_type = 'DATE' or T.value_type = 'DATE')
             and Document_Scan_Ai_Pkg.Validate_Date_Conversion(F.field_text, L.common_date_format, L.nls_date_language) = 1 then 1
             when F.value_type = 'DATE' and L.iso_code = C.processor_language_code and VALIDATE_CONVERSION(F.field_value AS NUMBER) = 1 then 1 
             when F.value_type = 'DATE' and L.iso_code = C.processor_language_code and VALIDATE_CONVERSION(F.field_value AS TIMESTAMP, 'YYYY-MM-DD"T"HH24:MI:SS.FF"Z"') = 1 then 1 
@@ -310,9 +306,9 @@ CREATE OR REPLACE VIEW  V_DOCUMENT_SCAN_AI_LINE_ITEM (
 ,      case when (F.value_type = 'NUMBER' or T.value_type = 'NUMBER') 
             and Document_Scan_Ai_Pkg.Validate_Number_Conversion(F.field_text, L.nls_numeric_characters, L.nls_currency, L.nls_iso_currency, L.territory) = 1 
                 then Document_Scan_Ai_Pkg.FM9_TO_Number(F.field_text, L.nls_numeric_characters, L.nls_currency, L.nls_iso_currency, L.territory, p_Default_On_Error=>0)
-            when F.value_type = 'NUMBER' and L.iso_code = C.processor_language_code
-            and Document_Scan_Ai_Pkg.Validate_Number_Conversion(F.field_value, C.number_character, C.currency_character, L.nls_iso_currency, L.territory) = 1 
-                then Document_Scan_Ai_Pkg.FM9_TO_Number(F.field_value, C.number_character, C.currency_character, L.nls_iso_currency, L.territory, p_Default_On_Error=>0)
+            --when F.value_type = 'NUMBER' and L.iso_code = C.processor_language_code
+            --and Document_Scan_Ai_Pkg.Validate_Number_Conversion(F.field_value, C.number_character, C.currency_character, L.nls_iso_currency, L.territory) = 1 
+            --    then Document_Scan_Ai_Pkg.FM9_TO_Number(F.field_value, C.number_character, C.currency_character, L.nls_iso_currency, L.territory, p_Default_On_Error=>0)
        end Number_value
 ,      case 
             when (F.value_type = 'DATE' or T.value_type = 'DATE')
@@ -414,6 +410,7 @@ order by job_id, file_name, page_number, line_number;
 CREATE OR REPLACE VIEW  V_DOCUMENT_SCAN_AI_INVOICES AS
 with KEY_VALUE_INVOICE as (
     select a.document_id
+        , a.custom_id 
         , a.file_name
         , a.job_id
         , a.Context_Id
@@ -444,7 +441,6 @@ with KEY_VALUE_INVOICE as (
         , MAX(DECODE(a.FIELD_LABEL,'ShippingCost', a.NUMBER_VALUE)) Shipping_Cost
         , MAX(DECODE(a.FIELD_LABEL,'SubTotal', a.NUMBER_VALUE)) SubTotal
         , MAX(DECODE(a.FIELD_LABEL,'TotalTax', a.NUMBER_VALUE)) Total_Tax
-        , MAX(DECODE(a.FIELD_LABEL,'TaxRate', a.NUMBER_VALUE)) Tax_Rate
         , MAX(DECODE(a.FIELD_LABEL,'TotalVAT', a.NUMBER_VALUE)) Total_VAT
         , MAX(DECODE(a.FIELD_LABEL,'VendorAddress', a.FIELD_VALUE)) Vendor_Address
         , MAX(DECODE(a.FIELD_LABEL,'VendorAddressRecipient', a.FIELD_VALUE)) Vendor_Address_Recipient
@@ -452,6 +448,7 @@ with KEY_VALUE_INVOICE as (
         , MAX(DECODE(a.FIELD_LABEL,'VendorNameLogo', a.FIELD_VALUE)) Vendor_Name_Logo
         , MAX(DECODE(a.FIELD_LABEL,'VendorTaxId', a.FIELD_VALUE)) Vendor_Tax_Id
 		-- extra custom field labels from DOCUMENT_SCAN_AI_FIELD_ALIAS
+        , MAX(DECODE(a.FIELD_LABEL,'TaxRate', a.NUMBER_VALUE)) Tax_Rate
         , MAX(DECODE(a.FIELD_LABEL,'InvoiceReceiptDate', a.DATE_VALUE)) Invoice_Receipt_Date	
         , MAX(DECODE(a.FIELD_LABEL,'InvoicePaidDate', a.DATE_VALUE)) Invoice_Paid_Date	
         , MAX(DECODE(a.FIELD_LABEL,'VendorEmail', a.FIELD_VALUE)) Vendor_Email
@@ -459,6 +456,7 @@ with KEY_VALUE_INVOICE as (
         , MAX(DECODE(a.FIELD_LABEL,'VendorMobil', a.FIELD_VALUE)) Vendor_Mobil
         , MAX(DECODE(a.FIELD_LABEL,'BankBIC', a.FIELD_VALUE)) Bank_BIC
         , MAX(DECODE(a.FIELD_LABEL,'BankIBAN', a.FIELD_VALUE)) Bank_IBAN
+        , MAX(DECODE(a.FIELD_LABEL,'BankPurpose', a.FIELD_VALUE)) Bank_Purpose
     from V_DOCUMENT_SCAN_AI_KEY_VALUE a 
     join DOCUMENT_SCAN_AI_FIELD_TYPES t 
         on T.Document_type IN (a.document_type, a.job_document_type) 
@@ -467,48 +465,52 @@ with KEY_VALUE_INVOICE as (
     where t.Document_type = 'INVOICE'
     and a.VALID_CONVERSION = 1
     group by a.document_id
+        , a.custom_id 
         , a.file_name
         , a.job_id
         , a.Context_Id
         , a.Config_Id
 )
 SELECT d.document_id
-,      d.job_id
-,      e.Context_Id
-,      d.file_name
-,      d.mime_type
-,      d.language_code 
-,      NVL((select max(dl.language_name) from document_scan_ai_languages dl 
+     , d.custom_id 
+     , d.job_id
+     , e.Context_Id
+     , d.file_name
+     , d.mime_type
+     , d.language_code 
+     , NVL((select max(dl.language_name) from document_scan_ai_languages dl 
 			where dl.iso_code = d.language_code and dl.config_id = j.config_id),
 		   (select max(jl.language_name) from document_scan_ai_languages jl 
 			where jl.iso_code = j.language_code and jl.config_id = j.config_id)
 	   ) language_name
-,      TO_CHAR(ROUND(d.language_score * 100 ,1),'fm999.0') || '%' language_score
-,      d.document_type_code document_type
-,      TO_CHAR(ROUND(d.document_type_score * 100,1),'fm999.0') || '%' document_type_score
-,      d.CustomerAddress_ID
-,      d.VendorAddress_ID  
-,      Document_Scan_Ai_Pkg.address_display_value(d.VendorAddress_ID) Linked_Vendor_Address
-,      d.BillingAddress_ID
-,      d.ShippingAddress_ID
-,      d.ServiceAddress_ID
-,      d.RemittanceAddress_ID
-,      d.page_count
-,      d.creation_date
-,      e.Amount_due, e.Billing_address, e.Billing_address_recipient,
-        e.Customer_address, e.Customer_address_recipient, e.Customer_id, e.Customer_name,
-        e.Customer_tax_id, e.Due_date, e.Invoice_date, e.Invoice_id, e.Invoice_total,
-        e.Payment_term, e.Previous_unpaid_balance, e.Purchase_order, e.Remittance_address,
-        e.Remittance_address_recipient, e.Service_address, e.Service_address_recipient,
-        e.Service_end_date, e.Service_start_date, e.Shipping_address,
-        e.Shipping_address_recipient, e.Shipping_cost, e.Subtotal, e.Total_tax, e.Total_vat,
-        e.Vendor_address, e.Vendor_address_recipient, e.Vendor_name, e.Vendor_name_logo, e.Vendor_tax_id,
-        e.Invoice_Receipt_Date, e.Invoice_Paid_Date, 
-        e.Vendor_Email, e.Vendor_Phone, e.Vendor_Mobil, 
-        e.Bank_BIC, e.Bank_IBAN
+     , TO_CHAR(ROUND(d.language_score * 100 ,1),'fm999.0') || '%' language_score
+     , d.document_type_code document_type
+     , TO_CHAR(ROUND(d.document_type_score * 100,1),'fm999.0') || '%' document_type_score
+     , d.CustomerAddress_ID
+     , d.VendorAddress_ID  
+     , Document_Scan_Ai_Pkg.address_display_value(d.VendorAddress_ID) Linked_Vendor_Address
+     , d.BillingAddress_ID
+     , d.ShippingAddress_ID
+     , d.ServiceAddress_ID
+     , d.RemittanceAddress_ID
+     , d.page_count
+     , d.creation_date
+     , e.Amount_due, e.Billing_address, e.Billing_address_recipient
+     , e.Customer_address, e.Customer_address_recipient, e.Customer_id, e.Customer_name
+     , e.Customer_tax_id, e.Due_date, e.Invoice_date, e.Invoice_id, e.Invoice_total
+     , e.Payment_term, e.Previous_unpaid_balance, e.Purchase_order, e.Remittance_address
+     , e.Remittance_address_recipient, e.Service_address, e.Service_address_recipient
+     , e.Service_end_date, e.Service_start_date, e.Shipping_address
+     , e.Shipping_address_recipient, e.Shipping_cost, e.Subtotal
+     , e.Total_tax
+     , e.Total_vat
+     , e.Vendor_address, e.Vendor_address_recipient, e.Vendor_name, e.Vendor_name_logo, e.Vendor_tax_id
+     , e.Tax_Rate, e.Invoice_Receipt_Date, e.Invoice_Paid_Date
+     , e.Vendor_Email, e.Vendor_Phone, e.Vendor_Mobil
+     , e.Bank_BIC, e.Bank_IBAN, e.Bank_Purpose
 FROM   DOCUMENT_SCAN_AI_DOCS d 
 JOIN   DOCUMENT_SCAN_AI_JOBS j ON d.job_id = j.job_id
-JOIN KEY_VALUE_INVOICE e ON d.document_id = e.document_id
+LEFT OUTER JOIN KEY_VALUE_INVOICE e ON d.document_id = e.document_id and d.job_id = e.job_id
 ;
 --------------------------------------------------------------------------------
 
@@ -753,6 +755,7 @@ with TEXT_LINES as (
                 y0					 NUMBER PATH '$.boundingPolygon.normalizedVertices[0].y'
         ))) jt
     WHERE s.job_id = j.job_id
+    AND s.document_id = NV('P5_DOCUMENT_ID')
 )
 select a.document_id, a.page_number, a.line_no, a.text_line
     , Value_Type, Number_value, Date_Value

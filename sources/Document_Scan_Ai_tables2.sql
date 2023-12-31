@@ -215,12 +215,14 @@ VALUES ('INVOICE', 'BankBIC',	'Vendor Bank BIC.', 'SWIFTBIC', 'Bank BIC', 'Bank 
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_TYPES (Document_type, Field_label, Description, Value_Type, Field_Name_Eng, Field_Name_Deu, Page_Item_Name)
 VALUES ('INVOICE', 'BankIBAN',	'Vendor Bank IBAN.', 'IBAN', 'Bank IBAN', 'Bank IBAN', 'P4_IBAN');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_TYPES (Document_type, Field_label, Description, Value_Type, Field_Name_Eng, Field_Name_Deu, Page_Item_Name)
-VALUES ('INVOICE', 'Ignored',	'Ignored Aliases', 'STRING', '*Ignored', '*Ausgeblendet', NULL);
---
+VALUES ('INVOICE', 'BankPurpose',	'Purpose of Payment".', 'ALPHANUM', 'Purpose of Payment', 'Verwendungszweck', 'P4_VERWENDUNGSZWECK');
+
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_TYPES (Document_type, Field_label, Description, Value_Type, Field_Name_Eng, Field_Name_Deu, Page_Item_Name)
 VALUES ('INVOICE', 'TaxRate',	'Tax rate in percent identified on this invoice.', 'NUMBER', 'Tax rate', 'Steuersatz', NULL);
 
-COMMIT;
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_TYPES (Document_type, Field_label, Description, Value_Type, Field_Name_Eng, Field_Name_Deu, Page_Item_Name)
+VALUES ('INVOICE', 'Ignored',	'Ignored Aliases', 'STRING', '*Ignored', '*Ausgeblendet', NULL);
+--COMMIT;
 
 
 ------------------------------------------------------------------------------------------

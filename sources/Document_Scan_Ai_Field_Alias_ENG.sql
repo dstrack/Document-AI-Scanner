@@ -93,6 +93,8 @@ INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alia
 VALUES ('INVOICE', 'InvoiceTotal',	'TOTAL', 'ENG');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'InvoiceTotal',	'Total', 'ENG');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'InvoiceTotal',	'Total price', 'ENG');
 
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'AmountDue',	'Amount payable', 'ENG');
@@ -175,3 +177,9 @@ INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alia
 VALUES ('INVOICE', 'BankIBAN',	'IBAN code', 'ENG');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'BankIBAN',	'IBAN (EUR)', 'ENG');
+
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'BankPurpose',	'Purpose of Payment', 'ENG');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'BankPurpose',	'Purpose', 'ENG');
+COMMIT;
