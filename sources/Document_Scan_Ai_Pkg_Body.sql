@@ -627,9 +627,9 @@ $END
 			then 'INITCAP'
 		when NVL(p_Value_Type, 'STRING' ) IN ('STRING','UPPER') and REGEXP_LIKE(p_Item_Value, '^[A-Z]+:?$')
 			then 'UPPER'
-		when  NVL(p_Value_Type, 'STRING' ) IN ('STRING','NUMERIC') and REGEXP_LIKE(p_Item_Value, '^[0-9,\.]+$') 
+		when  NVL(p_Value_Type, 'STRING' ) IN ('STRING','NUMERIC','DATE','NUMBER') and REGEXP_LIKE(p_Item_Value, '^[0-9,\.]+$') 
 			then 'NUMERIC'
-		when  NVL(p_Value_Type, 'STRING' ) IN ('STRING','ALPHANUM') and REGEXP_LIKE(p_Item_Value, '[0-9]+') 
+		when  NVL(p_Value_Type, 'STRING' ) IN ('STRING','ALPHANUM','DATE','NUMBER') and REGEXP_LIKE(p_Item_Value, '[0-9]+') 
 			then 'ALPHANUM'	-- contains at least one digit 
 		else 'STRING'
 		end;
@@ -1224,7 +1224,7 @@ $END
 					, lb.label_part item_label, lb.Field_label, lb.Value_Type
 					, lv.text_line item_value
 					, lv.x0, lv.y0
-					, sum(case when lv.field_alias IS NULL and lv.colon_offset !=  LENGTH(lv.text_line) then 0 else 1 end) 
+					, sum(case when lv.field_alias IS NULL and lv.colon_offset = 0 then 0 else 1 end) 
 						over (partition by lb.job_id, lb.document_id, lb.page_number, lb.line_no order by lv.y0) element_no
 					, lb.job_document_type, lb.document_type_code
 					, lb.config_id, lb.context_id, lb.language_code, lb.job_language_code, 3 category
@@ -1262,7 +1262,7 @@ $END
 				and lb.field_alias IS NOT NULL 
 				and UPPER(RTRIM(lb.text_line, ': ')) = UPPER(lb.field_alias)
 				and lb.x0 < lv.x0              -- label before value 
-				and abs(lb.y0 - lv.y0) < lb.line_height * 0.8 -- same line 
+				and abs(lb.y0 - lv.y0) < lb.line_height * 0.5 -- same line 
 				and length(lv.text_line) > 1
 				and lv.composite_pattern = 0
 				and lb.composite_pattern = 0
@@ -1275,9 +1275,10 @@ $END
 				on l.iso_code IN (lb.language_code, lb.job_language_code)
 				and lb.config_id = l.config_id
 				and lb.Value_Type in ('DATE','NUMBER') 
-			where (lb.element_cnt = 1 or lb.Value_Type not in ('DATE','NUMBER'))
-			-- and (lb.element_no = 0 or lb.category = 1)
-			and (lb.element_no = 0 or lb.Value_Type not in ('DATE','NUMBER'))
+			where -- (lb.element_cnt = 1 or lb.Value_Type = 'STRING')
+			(lb.element_cnt = 1 or lb.Value_Type not in ('DATE','NUMBER'))
+			-- and (lb.element_no = 0 or lb.Value_Type not in ('DATE','NUMBER'))
+			and (lb.element_no = 0 or lb.category = 1 or lb.Value_Type = 'STRING')
 			and not (lb.Field_label = 'BankPurpose' and lb.category != 3)
 			and not (lb.Field_label = 'VendorName' and NVL(UPPER(cx.Client_Name), '+') = UPPER(lb.item_value))
 			and not (lb.Field_label = 'VendorEmail' and NVL(UPPER(cx.Client_Email), '+') = UPPER(lb.item_value))
@@ -1290,11 +1291,11 @@ $END
 				then 1 else 0 
 			end as Valid_Conversion
 			, DENSE_RANK() OVER (PARTITION BY Job_Id, Document_Id, Field_label
-				ORDER BY case when (Value_Type = Item_Value_Type or Value_Type = 'STRING') 
+				ORDER BY case when (Value_Type = Item_Value_Type or Item_Value_Type != 'STRING' or Value_Type = 'STRING') 
 						then 0 else 1 end
+					, page_number -- first occourence
 					, LENGTH(ITEM_LABEL) desc, ITEM_LABEL
 					, language_rank
-					, page_number -- first occourence
 					--, ABS(NUMBER_VALUE) desc nulls last, DATE_VALUE desc nulls last
 					, category
 					, case 
@@ -1432,7 +1433,7 @@ $END
 				  ) or ( 
 					-- find labels with known alias followed by a value in the same line.
 					lb.x0 < lv.x0              -- label before value 
-					and abs(lb.y0 - lv.y0) < lb.line_height * 0.8 -- same line 
+					and abs(lb.y0 - lv.y0) < lb.line_height * 0.5 -- same line 
 					and lb.line_height <= lv.line_height
 				  )
 				)
@@ -1569,6 +1570,7 @@ $END
 					'Tax Rate' as field_alias,
 					1 user_confirmed
 			FROM DERIVED_VALUES d
+			WHERE Tax_Rate IS NOT NULL 
 			UNION ALL 
 			SELECT document_id, 
 					'KEY_VALUE' as field_type_code, 
@@ -1582,6 +1584,7 @@ $END
 					'Total VAT' as field_alias,
 					1 user_confirmed
 			FROM DERIVED_VALUES 
+			WHERE Total_vat IS NOT NULL 
         ) S
         ON (D.DOCUMENT_ID = S.DOCUMENT_ID AND D.PAGE_NUMBER = S.PAGE_NUMBER AND D.FIELD_TYPE_CODE = S.FIELD_TYPE_CODE 
         	AND D.FIELD_LABEL = S.FIELD_LABEL AND D.FIELD_TEXT = S.FIELD_TEXT)
@@ -1975,12 +1978,14 @@ $END
 		p_Table_Extraction		IN VARCHAR2 DEFAULT GC_TABLE_EXTRACTION,
 		p_generateSearchablePdf IN VARCHAR2 DEFAULT GC_GENERATE_SEARCHABLE_PDF,
 		p_exec_asynchronous 	IN VARCHAR2 DEFAULT GC_EXECUTE_ASYNCHRONOUS,
+		p_Export_Invoices 		IN VARCHAR2 DEFAULT 'N',
 		p_files_cv				IN files_ref_cursor,
 		p_Context 				IN NUMBER DEFAULT NULL
 	) RETURN Document_Scan_Ai_Jobs.Job_Id%TYPE
 	IS 
 		v_Job_ID		DOCUMENT_SCAN_AI_JOBS.Job_Id%TYPE;
-		v_sql			VARCHAR2(1000);
+		v_Exp_Call 		VARCHAR2(1000);
+		v_sql			VARCHAR2(2000);
 	BEGIN 
 		v_Job_ID := Create_Processorjob_Details (
 			p_documentType			=> p_documentType,
@@ -1992,16 +1997,23 @@ $END
 			p_Context				=> p_Context
 		);
 		if p_exec_asynchronous = 'Y' then 
+			v_Exp_Call := apex_string.format(
+				p_message => 'Document_Scan_Ai_Pkg.Export_Invoice_List(p_Job_ID => %s);',
+				p0 => v_Job_ID
+			);
+						
 			v_sql := apex_string.format(p_message => 
 				'begin 
 				!   apex_session.attach (%s, %s, %s);
 				!   Document_Scan_Ai_Pkg.Run_Processorjob (p_Job_Id => %s);
+				!   %s
 				!   apex_session.detach;
 				!end;', 
 				p0 => V('APP_ID'), 
 				p1 => V('APP_PAGE_ID'),
 				p2 => V('APP_SESSION'),
 				p3 => v_Job_ID, 
+				p4 => case when p_Export_Invoices = 'Y' then v_Exp_Call end,
 				p_prefix => '!'
 			);
 			dbms_scheduler.create_job (
@@ -2013,6 +2025,9 @@ $END
 			);
 		else 
 			Run_Processorjob (p_Job_Id => v_Job_ID);
+			if p_Export_Invoices = 'Y' then 
+				Export_Invoice_List(p_Job_ID => v_Job_ID); 
+			end if;
 		end if;
 
 		RETURN v_Job_ID;
@@ -2025,6 +2040,7 @@ $END
 		p_Table_Extraction		IN VARCHAR2 DEFAULT GC_TABLE_EXTRACTION,
 		p_generateSearchablePdf IN VARCHAR2 DEFAULT GC_GENERATE_SEARCHABLE_PDF,
 		p_exec_asynchronous 	IN VARCHAR2 DEFAULT GC_EXECUTE_ASYNCHRONOUS,
+		p_Export_Invoices 		IN VARCHAR2 DEFAULT 'N',
 		p_Context 				IN NUMBER DEFAULT NULL
 	) RETURN Document_Scan_Ai_Jobs.Job_Id%TYPE
 	IS 
@@ -2042,6 +2058,7 @@ $END
 			p_Table_Extraction		=> p_Table_Extraction,
 			p_generateSearchablePdf => p_generateSearchablePdf,
 			p_exec_asynchronous 	=> p_exec_asynchronous,
+			p_Export_Invoices		=> p_Export_Invoices,
 			p_files_cv				=> cr_files,
 			p_Context				=> p_Context
 		);

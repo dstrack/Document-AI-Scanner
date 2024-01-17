@@ -167,21 +167,21 @@ VALUES ('INVOICE', 'BillingAddress',	'Explicit billing address for the customer.
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_TYPES (Document_type, Field_label, Description, Value_Type, Field_Name_Eng, Field_Name_Deu, Page_Item_Name)
 VALUES ('INVOICE', 'BillingAddressRecipient',	'Name referenced with the BillingAddress.', 'STRING', 'Billing address recipient', 'Rechnungsadresse Empfänger', NULL);
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_TYPES (Document_type, Field_label, Description, Value_Type, Field_Name_Eng, Field_Name_Deu, Page_Item_Name)
-VALUES ('INVOICE', 'ShippingAddress',	'Explicit shipping address for the customer.', 'STRING', 'Shipping address', 'Lieferadresse', NULL);
+VALUES ('INVOICE', 'ShippingAddress',	'Explicit shipping address for the customer.', 'STRING', 'Shipping address', 'Lieferadresse', 'P4_MANDANTENSTRASSE');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_TYPES (Document_type, Field_label, Description, Value_Type, Field_Name_Eng, Field_Name_Deu, Page_Item_Name)
-VALUES ('INVOICE', 'ShippingAddressRecipient',	'Name referenced with the ShippingAddress.', 'STRING', 'Shipping address recipient', 'Lieferadresse Empfänger', NULL);
+VALUES ('INVOICE', 'ShippingAddressRecipient',	'Name referenced with the ShippingAddress.', 'STRING', 'Shipping address recipient', 'Lieferadresse Empfänger', 'P4_MANDANTENSTRASSE');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_TYPES (Document_type, Field_label, Description, Value_Type, Field_Name_Eng, Field_Name_Deu, Page_Item_Name)
 VALUES ('INVOICE', 'PaymentTerm',	'The terms of payment for the invoice.', 'STRING', 'Payment term', 'Zahlungsbedingungen', NULL);
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_TYPES (Document_type, Field_label, Description, Value_Type, Field_Name_Eng, Field_Name_Deu, Page_Item_Name)
 VALUES ('INVOICE', 'SubTotal',	'Subtotal field identified on this invoice.', 'NUMBER', 'Sub total', 'Zwischensumme Netto', 'P4_GEA_FORDERUNG_NETTO');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_TYPES (Document_type, Field_label, Description, Value_Type, Field_Name_Eng, Field_Name_Deu, Page_Item_Name)
-VALUES ('INVOICE', 'TotalTax',	'Total tax value identified on this invoice.', 'NUMBER', 'Total tax', 'Gesamtsteuer', 'P4_GEA_FORDERUNG_UST');
+VALUES ('INVOICE', 'TotalTax',	'Total tax value identified on this invoice.', 'NUMBER', 'Total tax', 'Gesamtsteuer', 'P4_FORDERUNG_UST');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_TYPES (Document_type, Field_label, Description, Value_Type, Field_Name_Eng, Field_Name_Deu, Page_Item_Name)
-VALUES ('INVOICE', 'TotalVAT',	'Total tax value identified on this invoice.', 'NUMBER', 'Total vat', 'Gesamtmehrwertsteuer', 'P4_GEA_FORDERUNG_UST');
+VALUES ('INVOICE', 'TotalVAT',	'Total tax value identified on this invoice.', 'NUMBER', 'Total vat', 'Gesamtmehrwertsteuer', 'P4_FORDERUNG_UST');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_TYPES (Document_type, Field_label, Description, Value_Type, Field_Name_Eng, Field_Name_Deu, Page_Item_Name)
-VALUES ('INVOICE', 'InvoiceTotal',	'Total charge amount associated with the invoice.', 'NUMBER', 'Invoice total', 'Rechnungsumme Brutto', 'P4_GEAENDERTE_FORDERUNG');
+VALUES ('INVOICE', 'InvoiceTotal',	'Total charge amount associated with the invoice.', 'NUMBER', 'Invoice total', 'Rechnungsumme Brutto', 'P4_FORDERUNG');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_TYPES (Document_type, Field_label, Description, Value_Type, Field_Name_Eng, Field_Name_Deu, Page_Item_Name)
-VALUES ('INVOICE', 'AmountDue',	'Total amount due to the vendor.', 'NUMBER', 'Amount due', 'Fälliger Betrag', 'P4_GEAENDERTE_FORDERUNG');
+VALUES ('INVOICE', 'AmountDue',	'Total amount due to the vendor.', 'NUMBER', 'Amount due', 'Fälliger Betrag', 'P4_FORDERUNG');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_TYPES (Document_type, Field_label, Description, Value_Type, Field_Name_Eng, Field_Name_Deu, Page_Item_Name)
 VALUES ('INVOICE', 'ServiceAddress',	'Explicit service address or property address for the customer.', 'STRING', 'Service address', 'Serviceadresse', NULL);
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_TYPES (Document_type, Field_label, Description, Value_Type, Field_Name_Eng, Field_Name_Deu, Page_Item_Name)
@@ -316,6 +316,8 @@ INSERT INTO document_scan_ai_languages (iso_code, language_name, common_date_for
 VALUES ('DEU', 'German', 'DD.MM.RRRR', '999.999.999,99', 'GERMAN', 'GERMANY', ',.','€', 'EUR');
 INSERT INTO document_scan_ai_languages (iso_code, language_name, common_date_format, common_number_format, nls_date_language, territory, nls_numeric_characters, nls_currency, nls_iso_currency)
 VALUES ('DEU', 'German', 'DD.MM.RRRR', '999 999 999.99', 'GERMAN', 'AUSTRIA', '. ','€', 'EUR');
+INSERT INTO document_scan_ai_languages (iso_code, language_name, common_date_format, common_number_format, nls_date_language, territory, nls_numeric_characters, nls_currency, nls_iso_currency)
+VALUES ('DEU', 'German', 'DD.MM.RRRR', '999 999 999,99', 'GERMAN', 'SWITZERLAND', ', ','€', 'EUR');
 
 INSERT INTO document_scan_ai_languages (iso_code, language_name, common_date_format, common_number_format, nls_date_language, territory, nls_numeric_characters, nls_currency, nls_iso_currency)
 VALUES ('FRA', 'French', 'DD/MM/RRRR', '999 999 999,99', 'FRENCH', 'FRANCE', ', ','€', 'EUR');

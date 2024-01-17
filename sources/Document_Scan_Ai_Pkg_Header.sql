@@ -237,6 +237,7 @@ CREATE OR REPLACE PACKAGE Document_Scan_Ai_Pkg AS
 		p_Table_Extraction		IN VARCHAR2 DEFAULT GC_TABLE_EXTRACTION,
 		p_generateSearchablePdf IN VARCHAR2 DEFAULT GC_GENERATE_SEARCHABLE_PDF,
 		p_exec_asynchronous 	IN VARCHAR2 DEFAULT GC_EXECUTE_ASYNCHRONOUS,
+		p_Export_Invoices 		IN VARCHAR2 DEFAULT 'N',
 		p_files_cv				IN files_ref_cursor,
 		p_Context 				IN NUMBER DEFAULT NULL
 	) RETURN Document_Scan_Ai_Jobs.Job_Id%TYPE;
@@ -248,6 +249,7 @@ CREATE OR REPLACE PACKAGE Document_Scan_Ai_Pkg AS
 		p_Table_Extraction		IN VARCHAR2 DEFAULT GC_TABLE_EXTRACTION,
 		p_generateSearchablePdf IN VARCHAR2 DEFAULT GC_GENERATE_SEARCHABLE_PDF,
 		p_exec_asynchronous 	IN VARCHAR2 DEFAULT GC_EXECUTE_ASYNCHRONOUS,
+		p_Export_Invoices 		IN VARCHAR2 DEFAULT 'N',
 		p_Context 				IN NUMBER DEFAULT NULL
 	) RETURN Document_Scan_Ai_Jobs.Job_Id%TYPE;
 

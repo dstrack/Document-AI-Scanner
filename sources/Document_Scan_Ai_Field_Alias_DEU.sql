@@ -72,6 +72,8 @@ INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alia
 VALUES ('INVOICE', 'InvoiceId',	'HONORARNOTE NR', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'InvoiceId',	'HONORARNOTE NR.', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'InvoiceId',	'HONORARNOTE', 'DEU');
 
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'InvoiceDate',	'Datum', 'DEU');
@@ -175,6 +177,8 @@ VALUES ('INVOICE', 'SubTotal',	'Netto', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'SubTotal',	'Netto EUR', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'SubTotal',	'Netto in EUR', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'SubTotal',	'Gesamt EUR', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'SubTotal',	'Netto Euro', 'DEU');
@@ -190,8 +194,6 @@ INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alia
 VALUES ('INVOICE', 'SubTotal',	'Rechnungsbetrag netto', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'SubTotal',	'Gesamtbetrag netto', 'DEU');
-INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
-VALUES ('INVOICE', 'SubTotal',	'Netto ', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'SubTotal',	'Betrag exkl. USt', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
@@ -250,6 +252,8 @@ VALUES ('INVOICE', 'TotalVAT',	'Betrag USt. 20%', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'TotalVAT',	'zzgl. Umsatzsteuer 20%', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'TotalVAT',	'zuziglich 19% MwSt', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'TotalVAT',	'Umsatzsteuer', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'TotalVAT',	'Betrag 20 %USt.', 'DEU');
@@ -261,7 +265,8 @@ INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alia
 VALUES ('INVOICE', 'TotalVAT',	'+ 20 % Umsatzsteuer', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'TotalVAT',	'zzgl. 20% gesetzlicher MwSt.', 'DEU');
-
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'TotalVAT',	'20 % Mehrwertsteuer', 'DEU');
 
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'InvoiceTotal',	'Rechnungsumme Brutto', 'DEU');
@@ -303,6 +308,8 @@ INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alia
 VALUES ('INVOICE', 'InvoiceTotal',	'NACHTRAGSPRAMIE', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'InvoiceTotal',	'Brutto', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'InvoiceTotal',	'Brutto in EUR', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'InvoiceTotal',	'Betrag', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
