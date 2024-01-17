@@ -13,7 +13,8 @@ The Document AI Scanner is an Oracle APEX 23.2 application that leverages the Or
 - **Language Support**: Uses the discovered language to support proper date and number conversions using appropriate NLS-Settings.
 - **Long Running Jobs**: Can wait for long running jobs without producing timeout error.
 - **Downloadable Analysis**: The full analysis can be downloaded as a zip file.
-
+- **Full Text Search**: Search with full text index in the searchable pdf files.
+  
 ## How it Works
 The application accepts a set of files and then passed them to the Document Understanding AI Service for processing.
 At the completion of the process, the application retrives the analysis results and stores them in sql tables.
