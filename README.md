@@ -28,7 +28,7 @@ Follow the detailed installation instructions in the "Document AI Scanner App - 
 
 The app uses the standard model of the AI service at the API endpoint: https://document.aiservice.eu-frankfurt-1.oci.oraclecloud.com/20221109/processorJobs
 
-In the app there is a configuration page with all parameters. When installing the supporting objects, the SQL skips are installed from the repo. In the file Document_Scan_Ai_Field_Alias_DEU.sql you will find the German field aliases for the supported key-value pairs.
+In the app there is a configuration page with all parameters. When installing the supporting objects, the SQL skrips are installed from the repo. In the file Document_Scan_Ai_Field_Alias_DEU.sql you will find the German field aliases for the supported key-value pairs.
 
 ## Contributing
 Contributions are welcome! Please read our contributing guidelines before getting started.
