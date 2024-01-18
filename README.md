@@ -23,7 +23,12 @@ The application uses a algorithm that improves the key-value results provided by
 
 ## Getting Started
 Install the file Document AI Scanner App.sql as an APEX application in your Oracle Autonomous database. Also install the supporting objects in the installation process.
+There is decent documentation https://github.com/dstrack/Document-AI-Scanner/blob/main/docs/Document%20AI%20Scanner%20App%20-%20Application%20Guide.pdf
 Follow the detailed installation instructions in the "Document AI Scanner App - Application Guide.pdf" to enable the connections to the REST-API and the object store. 
+
+The app uses the standard model of the AI service at the API endpoint: https://document.aiservice.eu-frankfurt-1.oci.oraclecloud.com/20221109/processorJobs
+
+In the app there is a configuration page with all parameters. When installing the supporting objects, the SQL skips are installed from the repo. In the file Document_Scan_Ai_Field_Alias_DEU.sql you will find the German field aliases for the supported key-value pairs.
 
 ## Contributing
 Contributions are welcome! Please read our contributing guidelines before getting started.
