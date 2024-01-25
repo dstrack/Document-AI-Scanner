@@ -81,6 +81,8 @@ INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alia
 VALUES ('INVOICE', 'InvoiceDate',	'Rechnungsdatum', 'DEU');
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'InvoiceDate',	'Leistungsdatum', 'DEU');
+INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
+VALUES ('INVOICE', 'InvoiceDate',	'am', 'DEU');
 
 INSERT INTO DOCUMENT_SCAN_AI_FIELD_ALIAS (Document_type, Field_label, field_alias, language_code)
 VALUES ('INVOICE', 'DueDate',	'Fllig am', 'DEU');

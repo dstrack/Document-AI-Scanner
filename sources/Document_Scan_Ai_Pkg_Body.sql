@@ -1128,14 +1128,15 @@ $END
 				t.LINE_NO,
 				t.ELEMENT_NO,
 				t.LINE_HEIGHT,
-				t.X0,
+				t.X0, -- upper left
 				t.Y0,
-				t.X1,
+				t.X1, -- upper right
 				t.Y1,
-				t.X2,
+				t.X2, -- lower right
 				t.Y2,
-				t.X3,
+				t.X3, -- lower left
 				t.Y3,
+				t.x0 + (t.x1 - t.x0) / 2 x_center,
 				t.CONFIG_ID,
 				t.CONTEXT_ID,
 				t.JOB_LANGUAGE_CODE,
@@ -1159,7 +1160,7 @@ $END
 			select s.document_id, s.job_id, s.page_number, 
 				s.text_line, 
 				s.line_no, s.element_no,
-				s.line_height, s.x0, s.y0, s.x1, s.y1, s.y3, 
+				s.line_height, s.x0, s.y0, s.x1, s.y1, s.y3, s.x_center,
 				s.config_id, s.context_id, s.job_language_code, s.language_code,
 				s.job_document_type, s.document_type_code,
 				s.composite_pattern,
@@ -1238,7 +1239,10 @@ $END
 				and lb.y3 < lv.y0              	-- label above value 
 				and (lv.y0 - lb.y3) < lb.line_height * 3.8		-- near by; in the next lines below
                 and lb.x0 <= lv.x1				-- label left side before data right side
-				and (abs(lb.x0 - lv.x0) < lb.line_height * 2.8 or abs(lb.x1 - lv.x1) < lb.line_height * 2.8) -- same column, left or right aligned 
+				and (abs(lb.x0 - lv.x0) < lb.line_height * 2.8 
+					or abs(lb.x1 - lv.x1) < lb.line_height * 2.8
+					or abs(lb.x_center - lv.x_center) < lb.line_height * 2.0
+				) -- same column, left or right aligned 
 				and length(lv.text_line) > 1
 				and lv.composite_pattern = 0
 				and lb.composite_pattern = 0
@@ -1347,6 +1351,7 @@ $END
 				t.Y2,
 				t.X3,
 				t.Y3,
+				t.x0 + (t.x1 - t.x0) / 2 x_center,
 				t.CONFIG_ID,
 				t.CONTEXT_ID,
 				t.JOB_LANGUAGE_CODE,
@@ -1428,8 +1433,11 @@ $END
 				and ((
 					-- find labels (optional ending with :) followed by a value on the next line below
 					lb.y0 < lv.y0              	-- label above value 
-					and (lv.y0 - lb.y0) < lb.line_height * 2.8		-- near by; in the next lines below
-					and (abs(lb.x0 - lv.x0) < lb.line_height * 2.5 or abs(lb.x1 - lv.x1) < lb.line_height * 2.5) -- same column, left or right aligned 
+					and (lv.y0 - lb.y0) < lb.line_height * 3.8		-- near by; in the next lines below
+					and (abs(lb.x0 - lv.x0) < lb.line_height * 2.8 
+					  or abs(lb.x1 - lv.x1) < lb.line_height * 2.8
+					  or abs(lb.x_center - lv.x_center) < lb.line_height * 2.0
+					) -- same column, left or right aligned 
 				  ) or ( 
 					-- find labels with known alias followed by a value in the same line.
 					lb.x0 < lv.x0              -- label before value 

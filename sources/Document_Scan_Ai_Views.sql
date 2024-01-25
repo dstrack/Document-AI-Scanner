@@ -295,8 +295,6 @@ CREATE OR REPLACE VIEW  V_DOCUMENT_SCAN_AI_LINE_ITEM (
 ,      case when (F.value_type = 'NUMBER' or T.value_type = 'NUMBER') 
             and Document_Scan_Ai_Pkg.Validate_Number_Conversion(F.field_text, L.nls_numeric_characters, L.nls_currency, L.nls_iso_currency, L.territory) = 1 then 1 
             when F.value_type = 'NUMBER' and L.iso_code = C.processor_language_code
-            --and Document_Scan_Ai_Pkg.Validate_Number_Conversion(F.field_value, C.number_character, C.currency_character, L.nls_iso_currency, L.territory) = 1 then 1 
-            --when (F.value_type = 'DATE' or T.value_type = 'DATE')
             and Document_Scan_Ai_Pkg.Validate_Date_Conversion(F.field_text, L.common_date_format, L.nls_date_language) = 1 then 1
             when F.value_type = 'DATE' and L.iso_code = C.processor_language_code and VALIDATE_CONVERSION(F.field_value AS NUMBER) = 1 then 1 
             when F.value_type = 'DATE' and L.iso_code = C.processor_language_code and VALIDATE_CONVERSION(F.field_value AS TIMESTAMP, 'YYYY-MM-DD"T"HH24:MI:SS.FF"Z"') = 1 then 1 
@@ -306,9 +304,6 @@ CREATE OR REPLACE VIEW  V_DOCUMENT_SCAN_AI_LINE_ITEM (
 ,      case when (F.value_type = 'NUMBER' or T.value_type = 'NUMBER') 
             and Document_Scan_Ai_Pkg.Validate_Number_Conversion(F.field_text, L.nls_numeric_characters, L.nls_currency, L.nls_iso_currency, L.territory) = 1 
                 then Document_Scan_Ai_Pkg.FM9_TO_Number(F.field_text, L.nls_numeric_characters, L.nls_currency, L.nls_iso_currency, L.territory, p_Default_On_Error=>0)
-            --when F.value_type = 'NUMBER' and L.iso_code = C.processor_language_code
-            --and Document_Scan_Ai_Pkg.Validate_Number_Conversion(F.field_value, C.number_character, C.currency_character, L.nls_iso_currency, L.territory) = 1 
-            --    then Document_Scan_Ai_Pkg.FM9_TO_Number(F.field_value, C.number_character, C.currency_character, L.nls_iso_currency, L.territory, p_Default_On_Error=>0)
        end Number_value
 ,      case 
             when (F.value_type = 'DATE' or T.value_type = 'DATE')
@@ -365,19 +360,6 @@ BEGIN
 END;
 /
 
-
-/*
-select ', MAX(DECODE(FIELD_LABEL,'||dbms_assert.enquote_literal(Field_label) ||', ' 
-    || case Value_Type 
-        when 'NUMBER' then 'NUMBER_VALUE' 
-        when 'DATE' then 'DATE_VALUE'
-        else 'FIELD_VALUE'
-    end
-    || ')) ' || Field_label
-from DOCUMENT_SCAN_AI_FIELD_TYPES
-where Document_type = 'INVOICE'
-order by Field_label;
-*/
 --------------------------------------------------------------------------------
 
 CREATE OR REPLACE VIEW  V_DOCUMENT_SCAN_AI_LINE_ITEM_INVOICE AS
