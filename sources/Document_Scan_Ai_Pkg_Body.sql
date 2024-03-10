@@ -1813,7 +1813,7 @@ $END
 			);
 			exit when vr_processorJob_data.lifecycleState IN ('SUCCEEDED', 'FAILED', 'CANCELED', 'CANCELING');
 			-- APEX_UTIL.PAUSE(2); -- pause is a no-op on cloud
-			SYS.DBMS_LOCK.SLEEP (GC_Jobs_Sleep_Seconds);			
+			SYS.DBMS_SESSION.SLEEP (GC_Jobs_Sleep_Seconds);			
 		end loop;		
 		IF vr_processorJob_data.lifecycleState = 'FAILED'
 		and vr_processorJob_data.lifecycleDetails = 'COMPLETELY_FAILED' THEN
